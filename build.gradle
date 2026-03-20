@@ -1,9 +1,8 @@
 plugins {
     id 'java'
     id 'war'
-    id 'org.springframework.boot' version '4.0.3'
+    id 'org.springframework.boot' version '3.3.10'
     id 'io.spring.dependency-management' version '1.1.7'
-    id 'org.asciidoctor.jvm.convert' version '4.0.5'
 }
 
 group = 'com.jjp'
@@ -26,56 +25,28 @@ repositories {
     mavenCentral()
 }
 
-ext {
-    set('snippetsDir', file("build/generated-snippets"))
-    set('springModulithVersion', "2.0.3")
-}
-
 dependencies {
     implementation 'org.springframework.boot:spring-boot-starter-actuator'
     implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
     implementation 'org.springframework.boot:spring-boot-starter-security'
     implementation 'org.springframework.boot:spring-boot-starter-thymeleaf'
     implementation 'org.springframework.boot:spring-boot-starter-web'
-    implementation 'org.springframework.boot:spring-boot-starter-webservices'
-    implementation 'org.springframework.boot:spring-boot-starter-websocket'
-    implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:2.8.6'
     // 파일 파싱: Apache POI (.docx, .pptx), PDFBox (.pdf)
     implementation 'org.apache.poi:poi-ooxml:5.3.0'
     implementation 'org.apache.pdfbox:pdfbox:2.0.31'
-    implementation 'org.springframework.modulith:spring-modulith-starter-core'
-    implementation 'org.thymeleaf.extras:thymeleaf-extras-springsecurity6'
     compileOnly 'org.projectlombok:lombok'
     developmentOnly 'org.springframework.boot:spring-boot-devtools'
     developmentOnly 'org.springframework.boot:spring-boot-docker-compose'
     runtimeOnly 'org.postgresql:postgresql'
     implementation 'org.flywaydb:flyway-core'
     implementation 'org.flywaydb:flyway-database-postgresql'
-    runtimeOnly 'org.springframework.modulith:spring-modulith-actuator'
-    runtimeOnly 'org.springframework.modulith:spring-modulith-observability'
     annotationProcessor 'org.springframework.boot:spring-boot-configuration-processor'
     annotationProcessor 'org.projectlombok:lombok'
     providedRuntime 'org.springframework.boot:spring-boot-starter-tomcat'
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
-    testImplementation 'org.springframework.security:spring-security-test'
-    testImplementation 'io.projectreactor:reactor-test'
-    testImplementation 'org.springframework.modulith:spring-modulith-starter-test'
-    testImplementation 'org.springframework.restdocs:spring-restdocs-mockmvc'
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 }
 
-dependencyManagement {
-    imports {
-        mavenBom "org.springframework.modulith:spring-modulith-bom:${springModulithVersion}"
-    }
-}
-
 tasks.named('test') {
-    outputs.dir snippetsDir
     useJUnitPlatform()
-}
-
-tasks.named('asciidoctor') {
-    inputs.dir snippetsDir
-    dependsOn test
 }

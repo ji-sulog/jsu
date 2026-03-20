@@ -11,8 +11,6 @@ import java.security.NoSuchAlgorithmException;
 import java.time.format.DateTimeFormatter;
 import java.util.HexFormat;
 import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -20,6 +18,7 @@ public class QnaService {
 
     private final QnaPostRepository postRepo;
     private final QnaReplyRepository replyRepo;
+    private final QnaPostHistoryRepository historyRepo;
 
     @Value("${chat.admin-password}")
     private String adminPassword;
@@ -43,81 +42,194 @@ public class QnaService {
         return adminPassword.equals(password);
     }
 
+    public void validateAdmin(String password) {
+        if (!isAdmin(password)) {
+            throw new QnaAccessDeniedException("관리자 권한이 없습니다.");
+        }
+    }
+
     /* ── 목록 ──────────────────────────────────────────────────────── */
 
     @Transactional(readOnly = true)
-    public List<Map<String, Object>> getPublicList() {
-        // 비공개 글도 목록에 표시 (제목은 마스킹, 클릭 시 비번 요구)
+    public List<QnaPostSummaryResponse> getPublicList() {
         return postRepo.findAllByOrderByCreatedAtDesc()
-                .stream().map(this::toSummary).collect(Collectors.toList());
+                .stream()
+                .map(this::toSummary)
+                .toList();
     }
 
     @Transactional(readOnly = true)
-    public List<Map<String, Object>> getAllList() {
+    public List<QnaPostSummaryResponse> getAllList() {
         return postRepo.findAllByOrderByCreatedAtDesc()
-                .stream().map(this::toSummary).collect(Collectors.toList());
+                .stream()
+                .map(this::toSummary)
+                .toList();
     }
 
-    private Map<String, Object> toSummary(QnaPost p) {
-        return Map.of(
-                "id",       p.getId(),
-                "title",    p.isPublicPost() ? p.getTitle() : "🔒 비공개 문의",
-                "status",   p.getStatus(),
-                "isPublic", p.isPublicPost(),
-                "date",     p.getCreatedAt().format(FMT)
+    private QnaPostSummaryResponse toSummary(QnaPost p) {
+        return new QnaPostSummaryResponse(
+                p.getId(),
+                p.getTitle(),
+                p.getStatus(),
+                p.isPublicPost(),
+                p.getCreatedAt().format(FMT),
+                p.isDeleted()
         );
     }
 
     /* ── 글쓰기 ────────────────────────────────────────────────────── */
 
     @Transactional
-    public QnaPost createPost(String title, String content, boolean publicPost, String password) {
-        String hash = (password != null && !password.isBlank()) ? hash(password) : null;
-        return postRepo.save(new QnaPost(title, content, publicPost, hash));
+    public QnaIdResponse createPost(QnaCreatePostRequest request) {
+        validateCreatePostRequest(request);
+
+        String passwordHash = (request.password() != null && !request.password().isBlank())
+                ? hash(request.password()) : null;
+
+        QnaPost post = postRepo.save(new QnaPost(
+                request.title(),
+                normalizeContent(request.content()),
+                request.isPublic(),
+                passwordHash
+        ));
+
+        return new QnaIdResponse(post.getId(), "OK");
     }
 
     /* ── 상세 조회 ─────────────────────────────────────────────────── */
 
     @Transactional(readOnly = true)
-    public Map<String, Object> getDetail(Long postId, String password, boolean admin) {
+    public QnaPostDetailResponse getDetail(Long postId, String password, boolean admin) {
         QnaPost post = postRepo.findById(postId)
                 .orElseThrow(() -> new IllegalArgumentException("게시글을 찾을 수 없습니다."));
 
-        // 비공개 글 접근 제어
-        if (!post.isPublicPost() && !admin) {
-            if (password == null || !hash(password).equals(post.getPasswordHash())) {
-                return Map.of("error", "비밀번호가 틀렸습니다.");
-            }
-        }
+        validateReadAccess(post, password, admin);
 
-        List<Map<String, Object>> replies = replyRepo.findByPostOrderByCreatedAtAsc(post)
+        List<QnaReplyResponse> replies = replyRepo.findByPostOrderByCreatedAtAsc(post)
                 .stream()
-                .map(r -> Map.<String, Object>of(
-                        "id",      r.getId(),
-                        "content", r.getContent(),
-                        "date",    r.getCreatedAt().format(FMT)
+                .map(r -> new QnaReplyResponse(
+                        r.getId(),
+                        r.getContent(),
+                        r.getCreatedAt().format(FMT)
                 ))
-                .collect(Collectors.toList());
+                .toList();
 
-        return Map.of(
-                "id",       post.getId(),
-                "title",    post.getTitle(),
-                "content",  post.getContent(),
-                "status",   post.getStatus(),
-                "isPublic", post.isPublicPost(),
-                "date",     post.getCreatedAt().format(FMT),
-                "replies",  replies
+        List<QnaPostHistoryResponse> histories = admin
+                ? historyRepo.findByPostOrderByChangedAtDesc(post).stream()
+                .map(h -> new QnaPostHistoryResponse(
+                        h.getId(),
+                        h.getAction(),
+                        h.getTitle(),
+                        h.getContent(),
+                        h.getChangedAt().format(FMT)
+                ))
+                .toList()
+                : List.of();
+
+        return new QnaPostDetailResponse(
+                post.getId(),
+                post.getTitle(),
+                post.isDeleted() ? "삭제된 게시물입니다." : post.getContent(),
+                post.getStatus(),
+                post.isPublicPost(),
+                post.getCreatedAt().format(FMT),
+                post.getUpdatedAt().format(FMT),
+                post.isDeleted(),
+                !post.isDeleted() && !post.isPublicPost(),
+                replies,
+                histories
         );
+    }
+
+    @Transactional
+    public QnaStatusResponse updatePost(Long postId, String password, String adminPassword, QnaUpdatePostRequest request) {
+        validateUpdateRequest(request);
+
+        QnaPost post = postRepo.findById(postId)
+                .orElseThrow(() -> new IllegalArgumentException("게시글을 찾을 수 없습니다."));
+
+        validateEditableAccess(post, password, isAdmin(adminPassword));
+        saveHistory(post, "UPDATED");
+        post.update(request.title(), normalizeContent(request.content()));
+        postRepo.save(post);
+        return new QnaStatusResponse("OK");
+    }
+
+    @Transactional
+    public QnaStatusResponse deletePost(Long postId, String password, String adminPassword) {
+        QnaPost post = postRepo.findById(postId)
+                .orElseThrow(() -> new IllegalArgumentException("게시글을 찾을 수 없습니다."));
+
+        validateEditableAccess(post, password, isAdmin(adminPassword));
+        saveHistory(post, "DELETED");
+        post.markDeleted();
+        postRepo.save(post);
+        return new QnaStatusResponse("OK");
     }
 
     /* ── 답변 등록 (관리자 전용) ───────────────────────────────────── */
 
     @Transactional
-    public QnaReply addReply(Long postId, String content) {
+    public QnaIdResponse addReply(Long postId, String adminPassword, QnaCreateReplyRequest request) {
+        validateAdmin(adminPassword);
+        validateCreateReplyRequest(request);
+
         QnaPost post = postRepo.findById(postId)
                 .orElseThrow(() -> new IllegalArgumentException("게시글을 찾을 수 없습니다."));
+
         post.markAnswered();
         postRepo.save(post);
-        return replyRepo.save(new QnaReply(post, content));
+
+        QnaReply reply = replyRepo.save(new QnaReply(post, request.content()));
+        return new QnaIdResponse(reply.getId(), "OK");
+    }
+
+    private void validateCreatePostRequest(QnaCreatePostRequest request) {
+        if (request.title() == null || request.title().isBlank()) {
+            throw new QnaBadRequestException("제목을 입력하세요.");
+        }
+        if (!request.isPublic() && (request.password() == null || request.password().isBlank())) {
+            throw new QnaBadRequestException("비공개 글에는 비밀번호가 필요합니다.");
+        }
+    }
+
+    private void validateUpdateRequest(QnaUpdatePostRequest request) {
+        if (request.title() == null || request.title().isBlank()) {
+            throw new QnaBadRequestException("제목을 입력하세요.");
+        }
+    }
+
+    private void validateCreateReplyRequest(QnaCreateReplyRequest request) {
+        if (request.content() == null || request.content().isBlank()) {
+            throw new QnaBadRequestException("답변 내용을 입력하세요.");
+        }
+    }
+
+    private void validateReadAccess(QnaPost post, String password, boolean admin) {
+        if (post.isPublicPost() || admin) {
+            return;
+        }
+
+        if (password == null || !hash(password).equals(post.getPasswordHash())) {
+            throw new QnaAccessDeniedException("비밀번호가 틀렸습니다.");
+        }
+    }
+
+    private void validateEditableAccess(QnaPost post, String password, boolean admin) {
+        if (post.isPublicPost()) {
+            throw new QnaBadRequestException("비공개 문의만 수정 또는 삭제할 수 있습니다.");
+        }
+        if (post.isDeleted()) {
+            throw new QnaBadRequestException("삭제된 문의는 수정 또는 삭제할 수 없습니다.");
+        }
+        validateReadAccess(post, password, admin);
+    }
+
+    private String normalizeContent(String content) {
+        return content == null ? "" : content;
+    }
+
+    private void saveHistory(QnaPost post, String action) {
+        historyRepo.save(new QnaPostHistory(post, action, post.getTitle(), post.getContent()));
     }
 }

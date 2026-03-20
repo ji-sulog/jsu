@@ -508,6 +508,13 @@
                                 <path d="M8 21h8M12 17v4"/>
                                 <path d="M7 8h.01M11 8h6M7 12h.01M11 12h6"/>
                             </svg>
+                            <!-- id=6: API 스펙 아이콘 -->
+                            <svg th:if="${tool.id == 6}" width="22" height="22" viewBox="0 0 24 24"
+                                 fill="none" stroke="#94a3b8" stroke-width="2">
+                                <path d="M8 6h10"/><path d="M8 12h8"/><path d="M8 18h6"/>
+                                <rect x="3" y="4" width="18" height="16" rx="2"/>
+                                <path d="M6 8h.01M6 12h.01M6 16h.01"/>
+                            </svg>
                         </div>
                         <div class="tool-card-meta">
                             <div class="tool-card-name" th:text="${tool.name}">도구명</div>

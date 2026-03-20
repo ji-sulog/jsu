@@ -49,16 +49,6 @@
   .nav-item.active { background: #1d4ed8; color: #eff6ff; font-weight: 600; }
   .nav-item.active svg { stroke: #93c5fd; }
   .nav-item svg { flex-shrink: 0; }
-  .nav-item .badge-coming {
-    margin-left: auto; font-size: 0.62rem;
-    background: #1e293b; color: #475569;
-    border: 1px solid #334155; padding: 1px 6px; border-radius: 8px;
-  }
-
-  /* ── Disabled (준비중) ────────────────────────────────────── */
-  .nav-item--disabled { cursor: default; opacity: .5; }
-  .nav-item--disabled:hover { background: none !important; color: #64748b !important; }
-
   /* ── Footer ───────────────────────────────────────────────── */
   .sidebar-footer {
     padding: 14px 20px;
@@ -71,17 +61,19 @@
   .devlog-pill {
     display: inline-flex; align-items: center; gap: 5px;
     padding: 5px 10px; border-radius: 20px;
-    background: rgba(255,255,255,0.07);
-    border: 1px solid rgba(255,255,255,0.12);
-    color: #94a3b8; font-size: 0.72rem; font-weight: 600;
+    background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+    border: 1px solid #fbbf24;
+    color: #78350f; font-size: 0.72rem; font-weight: 700;
+    box-shadow: 0 8px 18px rgba(251, 191, 36, 0.22);
     cursor: pointer; text-decoration: none;
-    transition: background .15s, color .15s, border-color .15s, transform .1s;
+    transition: background .15s, color .15s, border-color .15s, transform .1s, box-shadow .15s;
     white-space: nowrap; flex-shrink: 0;
   }
   .devlog-pill:hover {
-    background: rgba(255,255,255,0.14);
-    border-color: rgba(255,255,255,0.25);
-    color: #e2e8f0; transform: translateY(-1px);
+    background: linear-gradient(135deg, #fef9c3 0%, #fcd34d 100%);
+    border-color: #f59e0b;
+    color: #713f12; transform: translateY(-1px);
+    box-shadow: 0 12px 24px rgba(245, 158, 11, 0.28);
   }
   .devlog-pill:active { transform: translateY(0); }
 
@@ -104,7 +96,7 @@
   <!-- 로고 / 홈 링크 -->
   <a class="sidebar-logo" href="/">
     <div class="logo-icon">
-      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#60a5fa" stroke-width="2">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#fbbf24" stroke-width="2">
         <rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/>
         <rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/>
       </svg>
@@ -156,37 +148,6 @@
       </a>
     </th:block>
 
-    <!-- 준비 중 구분선 -->
-    <div class="nav-group-label" style="margin-top:16px;">준비 중</div>
-
-    <!-- 준비 중 도구: 클릭 불가 -->
-    <th:block th:each="tool : ${sidebarTools}" th:if="${tool.status == 'COMING_SOON'}">
-      <span class="nav-item nav-item--disabled">
-
-        <svg th:if="${tool.id == 3}" width="16" height="16" viewBox="0 0 24 24"
-             fill="none" stroke="currentColor" stroke-width="2">
-          <ellipse cx="12" cy="5" rx="9" ry="3"/>
-          <path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/>
-          <path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/>
-        </svg>
-
-        <svg th:if="${tool.id == 4}" width="16" height="16" viewBox="0 0 24 24"
-             fill="none" stroke="currentColor" stroke-width="2">
-          <polyline points="4 7 4 4 20 4 20 7"/>
-          <line x1="9" y1="20" x2="15" y2="20"/>
-          <line x1="12" y1="4" x2="12" y2="20"/>
-        </svg>
-
-        <svg th:if="${tool.id == 5}" width="16" height="16" viewBox="0 0 24 24"
-             fill="none" stroke="currentColor" stroke-width="2">
-          <rect x="2" y="3" width="20" height="14" rx="2"/>
-          <path d="M8 21h8M12 17v4"/>
-        </svg>
-
-        <span th:text="${tool.name}"></span>
-        <span class="badge-coming">준비 중</span>
-      </span>
-    </th:block>
   </nav>
 
   <!-- 푸터 -->
@@ -269,7 +230,15 @@
   .qna-item:hover { background: #f8fafc; }
   .qna-item.private { opacity: 0.45; }
   .qna-item.private:hover { background: #f8fafc; opacity: 0.6; }
-  .qna-item.private .qna-item-title { color: #94a3b8; font-style: italic; }
+  .qna-item.private .qna-item-title { color: #64748b; }
+  .qna-item.deleted {
+    opacity: 0.6; background: #fafafa; cursor: default;
+  }
+  .qna-item.deleted:hover { background: #fafafa; }
+  .qna-item.deleted .qna-item-title {
+    color: #94a3b8; text-decoration: line-through;
+  }
+  .qna-item-deleted-text { color: #c2410c; font-size: 0.72rem; font-weight: 700; }
   .qna-item-row1 { display: flex; align-items: flex-start; gap: 6px; margin-bottom: 4px; }
   .qna-item-title {
     flex: 1; font-size: 0.83rem; font-weight: 600; color: #1e293b;
@@ -295,6 +264,13 @@
     width: 100%; text-align: left;
   }
   .qna-admin-btn:hover { color: #1d4ed8; }
+  .qna-admin-logout-btn {
+    background: none; border: none; cursor: pointer;
+    font-size: 0.72rem; color: #f59e0b; padding: 8px 14px;
+    border-top: 1px solid #f8fafc; flex-shrink: 0;
+    width: 100%; text-align: left; display: none;
+  }
+  .qna-admin-logout-btn:hover { color: #d97706; }
 
   /* ── 글쓰기 / 관리자 로그인 공통 폼 ─────────────────────── */
   .qna-form {
@@ -369,6 +345,18 @@
     background: #f8fafc; border-radius: 8px; padding: 10px 12px;
     margin-bottom: 14px; white-space: pre-wrap; word-break: break-all;
   }
+  .qna-detail-actions {
+    display: none; gap: 8px; margin-bottom: 14px;
+  }
+  .qna-detail-actions button {
+    border: none; border-radius: 8px; padding: 8px 12px;
+    font-size: 0.78rem; font-weight: 600; cursor: pointer;
+  }
+  .qna-detail-edit-btn { background: #dbeafe; color: #1d4ed8; }
+  .qna-detail-delete-btn { background: #fee2e2; color: #b91c1c; }
+  .qna-edit-note {
+    display: none; font-size: 0.72rem; color: #94a3b8;
+  }
   .qna-reply-section-label {
     font-size: 0.72rem; font-weight: 700; color: #64748b;
     text-transform: uppercase; letter-spacing: .04em; margin-bottom: 8px;
@@ -380,6 +368,23 @@
   .qna-reply-item p { font-size: 0.83rem; color: #1e293b; margin: 0 0 4px; white-space: pre-wrap; word-break: break-all; }
   .qna-reply-item span { font-size: 0.7rem; color: #93c5fd; }
   .qna-no-reply { font-size: 0.8rem; color: #cbd5e1; text-align: center; padding: 12px 0; }
+  .qna-history-wrap {
+    display: none; margin-top: 16px; padding-top: 14px; border-top: 1px solid #e2e8f0;
+  }
+  .qna-history-title {
+    font-size: 0.72rem; font-weight: 700; color: #64748b;
+    text-transform: uppercase; letter-spacing: .04em; margin-bottom: 8px;
+  }
+  .qna-history-item {
+    background: #fff7ed; border: 1px solid #fed7aa; border-radius: 8px;
+    padding: 10px 12px; margin-bottom: 8px;
+  }
+  .qna-history-meta { font-size: 0.72rem; color: #c2410c; margin-bottom: 6px; }
+  .qna-history-item strong { display: block; font-size: 0.8rem; color: #7c2d12; margin-bottom: 4px; }
+  .qna-history-item p {
+    margin: 0; font-size: 0.8rem; color: #9a3412; white-space: pre-wrap; word-break: break-all;
+  }
+  .qna-history-empty { font-size: 0.78rem; color: #cbd5e1; }
 
   /* 관리자 답변 입력 */
   .qna-reply-input-area {
@@ -436,6 +441,7 @@
       </div>
     </div>
     <button class="qna-admin-btn" id="qnaAdminBtn" onclick="qnaShowAdminLogin()">🔑 관리자 로그인</button>
+    <button class="qna-admin-logout-btn" id="qnaAdminLogoutBtn" onclick="qnaAdminLogout()">↩ 관리자 로그아웃</button>
   </div>
 
   <!-- ② 글쓰기 화면 -->
@@ -462,10 +468,11 @@
         <div class="qna-form-label">비밀번호 (나중에 조회 시 사용)</div>
         <input class="qna-input" id="qnaWritePw" type="password" placeholder="비밀번호 입력"/>
       </div>
+      <div class="qna-edit-note" id="qnaEditNote">비공개 문의만 수정할 수 있으며, 수정 전 내용은 이력으로 보관됩니다.</div>
       <span class="qna-err" id="qnaWriteErr"></span>
       <div class="qna-form-footer">
         <button class="qna-btn-cancel" onclick="qnaShowList()">취소</button>
-        <button class="qna-btn-primary" onclick="qnaSubmitPost()">등록하기</button>
+        <button class="qna-btn-primary" id="qnaWriteSubmitBtn" onclick="qnaSubmitPost()">등록하기</button>
       </div>
     </div>
   </div>
@@ -500,8 +507,16 @@
     <div class="qna-detail-scroll" id="qnaDetailScroll">
       <div class="qna-detail-meta" id="qnaDetailMeta"></div>
       <div class="qna-detail-content" id="qnaDetailContent"></div>
+      <div class="qna-detail-actions" id="qnaDetailActions">
+        <button class="qna-detail-edit-btn" onclick="qnaShowEdit()">수정</button>
+        <button class="qna-detail-delete-btn" onclick="qnaDeletePost()">삭제</button>
+      </div>
       <div class="qna-reply-section-label">관리자 답변</div>
       <div id="qnaReplies"></div>
+      <div class="qna-history-wrap" id="qnaHistoryWrap">
+        <div class="qna-history-title">수정 히스토리</div>
+        <div id="qnaHistories"></div>
+      </div>
     </div>
     <div class="qna-reply-input-area" id="qnaReplyInputArea">
       <textarea class="qna-reply-textarea" id="qnaReplyContent" placeholder="답변을 입력하세요"
@@ -542,6 +557,9 @@
   var _adminPw    = null;
   var _currentPostId = null;
   var _pendingPostId = null;   // 비공개 글 클릭 시 임시 저장
+  var _currentPostPassword = null;
+  var _currentPostData = null;
+  var _writeMode = 'create';
 
   /* ── 패널 토글 ────────────────────────────────────────────── */
   window.qnaToggle = function () {
@@ -565,6 +583,7 @@
     document.getElementById('qnaPanelTitle').textContent = _isAdmin ? '문의 게시판 (관리자)' : '문의 게시판';
     document.getElementById('qnaListLabel').textContent  = _isAdmin ? '전체 문의' : '공개 문의';
     document.getElementById('qnaAdminBtn').style.display = _isAdmin ? 'none' : 'block';
+    document.getElementById('qnaAdminLogoutBtn').style.display = _isAdmin ? 'block' : 'none';
     qnaLoadList();
   };
 
@@ -584,16 +603,19 @@
       scroll.innerHTML = '';
       posts.forEach(function(p) {
         var item = document.createElement('div');
-        item.className = 'qna-item' + (p.isPublic ? '' : ' private');
+        item.className = 'qna-item' + (p.isPublic ? '' : ' private') + (p.deleted ? ' deleted' : '');
         var lock = p.isPublic ? '' : ' <span class="qna-lock">🔒</span>';
+        var deletedText = p.deleted ? ' <span class="qna-item-deleted-text">삭제되었습니다.</span>' : '';
         item.innerHTML =
           '<div class="qna-item-row1">' +
-            '<span class="qna-item-title">' + qnaEsc(p.title) + lock + '</span>' +
+            '<span class="qna-item-title">' + qnaEsc(p.title) + lock + deletedText + '</span>' +
             '<span class="qna-badge ' + (p.status === 'ANSWERED' ? 'answered' : 'waiting') + '">' +
               (p.status === 'ANSWERED' ? '답변완료' : '대기중') + '</span>' +
           '</div>' +
           '<div class="qna-item-meta">' + qnaEsc(p.date) + '</div>';
-        item.addEventListener('click', function() { qnaClickPost(p); });
+        if (!p.deleted || _isAdmin) {
+          item.addEventListener('click', function() { qnaClickPost(p); });
+        }
         scroll.appendChild(item);
       });
     });
@@ -602,6 +624,7 @@
   /* ── 글 클릭 ─────────────────────────────────────────────── */
   function qnaClickPost(p) {
     _currentPostId = p.id;
+    _currentPostPassword = null;
     if (!p.isPublic && !_isAdmin) {
       _pendingPostId = p.id;
       showOnly('qnaPwView');
@@ -630,6 +653,8 @@
         return;
       }
       _currentPostId = id;
+      _currentPostPassword = password || _currentPostPassword;
+      _currentPostData = data;
       renderDetail(data);
     });
   };
@@ -642,8 +667,14 @@
     badge.textContent = data.status === 'ANSWERED' ? '답변완료' : '대기중';
     badge.className   = 'qna-badge ' + (data.status === 'ANSWERED' ? 'answered' : 'waiting');
 
-    document.getElementById('qnaDetailMeta').textContent = data.date;
+    var meta = data.date;
+    if (data.updatedAt && data.updatedAt !== data.date) meta += ' · 수정 ' + data.updatedAt;
+    if (data.deleted) meta += ' · 삭제됨';
+    document.getElementById('qnaDetailMeta').textContent = meta;
     document.getElementById('qnaDetailContent').textContent = data.content;
+
+    var actions = document.getElementById('qnaDetailActions');
+    actions.style.display = data.editable ? 'flex' : 'none';
 
     var repliesEl = document.getElementById('qnaReplies');
     if (!data.replies || !data.replies.length) {
@@ -660,21 +691,64 @@
 
     // 관리자면 답변 입력창 표시
     var replyArea = document.getElementById('qnaReplyInputArea');
-    replyArea.style.display = _isAdmin ? 'flex' : 'none';
+    replyArea.style.display = (_isAdmin && !data.deleted) ? 'flex' : 'none';
     document.getElementById('qnaReplyContent').value = '';
+
+    var historyWrap = document.getElementById('qnaHistoryWrap');
+    var historiesEl = document.getElementById('qnaHistories');
+    if (_isAdmin) {
+      historyWrap.style.display = 'block';
+      if (!data.histories || !data.histories.length) {
+        historiesEl.innerHTML = '<div class="qna-history-empty">아직 수정 히스토리가 없습니다.</div>';
+      } else {
+        historiesEl.innerHTML = '';
+        data.histories.forEach(function(h) {
+          var div = document.createElement('div');
+          div.className = 'qna-history-item';
+          div.innerHTML =
+            '<div class="qna-history-meta">' + qnaEsc(h.changedAt) + ' · ' + qnaEsc(h.action) + '</div>' +
+            '<strong>' + qnaEsc(h.title) + '</strong>' +
+            '<p>' + qnaEsc(h.content || '(내용 없음)') + '</p>';
+          historiesEl.appendChild(div);
+        });
+      }
+    } else {
+      historyWrap.style.display = 'none';
+      historiesEl.innerHTML = '';
+    }
 
     showOnly('qnaDetailView');
   }
 
   /* ── 글쓰기 ─────────────────────────────────────────────── */
   window.qnaShowWrite = function () {
+    _writeMode = 'create';
     document.getElementById('qnaWriteTitle').value   = '';
     document.getElementById('qnaWriteContent').value = '';
     document.getElementById('qnaWritePw').value      = '';
     document.getElementById('qnaPrivateToggle').checked = false;
+    document.getElementById('qnaPrivateToggle').disabled = false;
     document.getElementById('qnaPasswordRow').style.display = 'none';
+    document.getElementById('qnaEditNote').style.display = 'none';
     document.getElementById('qnaWriteErr').style.display    = 'none';
+    document.getElementById('qnaWriteSubmitBtn').textContent = '등록하기';
     document.getElementById('qnaPanelTitle').textContent = '문의 글쓰기';
+    showOnly('qnaWriteView');
+  };
+
+  window.qnaShowEdit = function () {
+    if (!_currentPostData || !_currentPostData.editable) return;
+    _writeMode = 'edit';
+    document.getElementById('qnaWriteTitle').value = _currentPostData.title || '';
+    document.getElementById('qnaWriteContent').value = _currentPostData.content || '';
+    document.getElementById('qnaWritePw').value = '';
+    document.getElementById('qnaPrivateToggle').checked = true;
+    document.getElementById('qnaPrivateToggle').disabled = true;
+    document.getElementById('qnaPasswordRow').style.display = 'none';
+    document.getElementById('qnaEditNote').style.display = 'block';
+    document.getElementById('qnaWriteErr').style.display = 'none';
+    document.getElementById('qnaWriteSubmitBtn').textContent = '수정하기';
+    document.getElementById('qnaPanelTitle').textContent = '문의 수정';
     showOnly('qnaWriteView');
   };
 
@@ -690,18 +764,59 @@
     var err      = document.getElementById('qnaWriteErr');
 
     if (!title)   { err.textContent = '제목을 입력하세요.';   err.style.display = 'block'; return; }
-    if (!content) { err.textContent = '내용을 입력하세요.';   err.style.display = 'block'; return; }
-    if (!isPublic && !password) { err.textContent = '비공개 글에는 비밀번호가 필요합니다.'; err.style.display = 'block'; return; }
+    if (_writeMode === 'create' && !isPublic && !password) { err.textContent = '비공개 글에는 비밀번호가 필요합니다.'; err.style.display = 'block'; return; }
     err.style.display = 'none';
 
-    fetch('/api/qna/posts', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ title: title, content: content, isPublic: isPublic, password: password || null })
+    var url = '/api/qna/posts';
+    var method = 'POST';
+    var headers = { 'Content-Type': 'application/json' };
+    var body = JSON.stringify({ title: title, content: content, isPublic: isPublic, password: password || null });
+
+    if (_writeMode === 'edit') {
+      url = '/api/qna/posts/' + _currentPostId;
+      method = 'PUT';
+      body = JSON.stringify({ title: title, content: content });
+      if (_isAdmin && _adminPw) headers['X-Admin-Password'] = _adminPw;
+      else if (_currentPostPassword) headers['X-Post-Password'] = _currentPostPassword;
+    }
+
+    fetch(url, {
+      method: method,
+      headers: headers,
+      body: body
     })
     .then(function(r) { return r.json(); })
     .then(function(data) {
       if (data.error) { err.textContent = data.error; err.style.display = 'block'; return; }
+      if (_writeMode === 'edit') {
+        qnaLoadDetail(_currentPostId, _currentPostPassword);
+        return;
+      }
+      qnaShowList();
+    });
+  };
+
+  window.qnaDeletePost = function () {
+    if (!_currentPostId || !_currentPostData || !_currentPostData.editable) return;
+    if (!confirm('이 비공개 문의를 삭제하시겠습니까? 삭제 후에는 목록에서 보이지 않습니다.')) return;
+
+    var headers = {};
+    if (_isAdmin && _adminPw) headers['X-Admin-Password'] = _adminPw;
+    else if (_currentPostPassword) headers['X-Post-Password'] = _currentPostPassword;
+
+    fetch('/api/qna/posts/' + _currentPostId, {
+      method: 'DELETE',
+      headers: headers
+    })
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+      if (data.error) {
+        alert(data.error);
+        return;
+      }
+      _currentPostId = null;
+      _currentPostPassword = null;
+      _currentPostData = null;
       qnaShowList();
     });
   };
@@ -729,6 +844,13 @@
       sessionStorage.setItem('qnaAdmin', pw);
       qnaShowList();
     });
+  };
+
+  window.qnaAdminLogout = function () {
+    _isAdmin = false;
+    _adminPw = null;
+    sessionStorage.removeItem('qnaAdmin');
+    qnaShowList();
   };
 
   /* ── 답변 등록 ───────────────────────────────────────────── */
@@ -822,9 +944,9 @@
   .env-badge {
     font-size: 0.7rem;
     font-weight: 700;
-    background: #dcfce7;
-    color: #166534;
-    border: 1px solid #86efac;
+    background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+    color: #78350f;
+    border: 1px solid #fbbf24;
     padding: 2px 10px;
     border-radius: 10px;
   }

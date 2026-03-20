@@ -7,8 +7,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.format.DateTimeFormatter;
 import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -20,63 +18,104 @@ public class DevLogService {
     private String adminPassword;
 
     private static final DateTimeFormatter FMT =
-            DateTimeFormatter.ofPattern("yyyy.MM.dd HH:mm");
+            DateTimeFormatter.ofPattern("yyyy.MM.dd");
 
     public boolean isAdmin(String password) {
         return adminPassword.equals(password);
     }
 
+    public void validateAdmin(String password) {
+        if (!isAdmin(password)) {
+            throw new DevLogAccessDeniedException("관리자 권한이 없습니다.");
+        }
+    }
+
     /* ── 목록 ──────────────────────────────────────────────────────── */
 
     @Transactional(readOnly = true)
-    public List<Map<String, Object>> getList() {
+    public List<DevLogSummaryResponse> getList() {
         return repo.findAllByOrderByCreatedAtDesc().stream()
-                .map(d -> Map.<String, Object>of(
-                        "id",      d.getId(),
-                        "title",   d.getTitle(),
-                        "tags",    d.getTagList(),
-                        "date",    d.getCreatedAt().format(FMT)
+                .map(d -> new DevLogSummaryResponse(
+                        d.getId(),
+                        d.getTitle(),
+                        d.getTagList(),
+                        d.getCreatedAt().format(FMT)
                 ))
-                .collect(Collectors.toList());
+                .toList();
     }
 
     /* ── 상세 ──────────────────────────────────────────────────────── */
 
     @Transactional(readOnly = true)
-    public Map<String, Object> getDetail(Long id) {
+    public DevLogDetailResponse getDetail(Long id) {
         DevLog d = repo.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("로그를 찾을 수 없습니다."));
-        return Map.of(
-                "id",        d.getId(),
-                "title",     d.getTitle(),
-                "content",   d.getContent(),
-                "tags",      d.getTagList(),
-                "createdAt", d.getCreatedAt().format(FMT),
-                "updatedAt", d.getUpdatedAt().format(FMT)
+
+        return new DevLogDetailResponse(
+                d.getId(),
+                d.getTitle(),
+                d.getContent(),
+                d.getTagList(),
+                d.getCreatedAt().format(FMT),
+                d.getUpdatedAt().format(FMT)
         );
     }
 
     /* ── 등록 ──────────────────────────────────────────────────────── */
 
     @Transactional
-    public DevLog create(String title, String content, String tags) {
-        return repo.save(new DevLog(title, content, tags));
+    public DevLogIdResponse create(String adminPassword, DevLogUpsertRequest request) {
+        validateAdmin(adminPassword);
+        validateRequest(request);
+
+        DevLog log = repo.save(new DevLog(
+                request.title(),
+                request.content(),
+                normalizeTags(request.tags())
+        ));
+
+        return new DevLogIdResponse(log.getId(), "OK");
     }
 
     /* ── 수정 ──────────────────────────────────────────────────────── */
 
     @Transactional
-    public DevLog update(Long id, String title, String content, String tags) {
+    public DevLogStatusResponse update(Long id, String adminPassword, DevLogUpsertRequest request) {
+        validateAdmin(adminPassword);
+        validateRequest(request);
+
         DevLog d = repo.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("로그를 찾을 수 없습니다."));
-        d.update(title, content, tags);
-        return repo.save(d);
+
+        d.update(request.title(), request.content(), normalizeTags(request.tags()));
+        repo.save(d);
+        return new DevLogStatusResponse("OK");
     }
 
     /* ── 삭제 ──────────────────────────────────────────────────────── */
 
     @Transactional
-    public void delete(Long id) {
+    public DevLogStatusResponse delete(Long id, String adminPassword) {
+        validateAdmin(adminPassword);
+
+        if (!repo.existsById(id)) {
+            throw new IllegalArgumentException("로그를 찾을 수 없습니다.");
+        }
+
         repo.deleteById(id);
+        return new DevLogStatusResponse("OK");
+    }
+
+    private void validateRequest(DevLogUpsertRequest request) {
+        if (request.title() == null || request.title().isBlank()) {
+            throw new DevLogBadRequestException("제목을 입력하세요.");
+        }
+        if (request.content() == null || request.content().isBlank()) {
+            throw new DevLogBadRequestException("내용을 입력하세요.");
+        }
+    }
+
+    private String normalizeTags(String tags) {
+        return tags == null ? "" : tags;
     }
 }

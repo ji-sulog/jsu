@@ -36,6 +36,15 @@ public class QnaPost {
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;
 
+    @Column(name = "updated_at", nullable = false)
+    private LocalDateTime updatedAt;
+
+    @Column(name = "is_deleted", nullable = false)
+    private boolean deleted;
+
+    @Column(name = "deleted_at")
+    private LocalDateTime deletedAt;
+
     public QnaPost(String title, String content, boolean publicPost, String passwordHash) {
         this.title        = title;
         this.content      = content;
@@ -43,9 +52,24 @@ public class QnaPost {
         this.passwordHash = passwordHash;
         this.status       = "WAITING";
         this.createdAt    = LocalDateTime.now();
+        this.updatedAt    = this.createdAt;
+        this.deleted      = false;
     }
 
     public void markAnswered() {
         this.status = "ANSWERED";
+        this.updatedAt = LocalDateTime.now();
+    }
+
+    public void update(String title, String content) {
+        this.title = title;
+        this.content = content;
+        this.updatedAt = LocalDateTime.now();
+    }
+
+    public void markDeleted() {
+        this.deleted = true;
+        this.deletedAt = LocalDateTime.now();
+        this.updatedAt = this.deletedAt;
     }
 }

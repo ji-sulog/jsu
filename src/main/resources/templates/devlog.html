@@ -33,6 +33,11 @@
       cursor: pointer; transition: background .15s;
     }
     .btn-secondary:hover { background: #f8fafc; }
+    .btn-icon {
+      width: 38px; height: 38px; padding: 0;
+      display: inline-flex; align-items: center; justify-content: center;
+      font-size: 1rem; line-height: 1;
+    }
     .btn-danger {
       background: #fff; color: #ef4444; border: 1px solid #fecaca;
       border-radius: 8px; padding: 8px 14px; font-size: 0.85rem;
@@ -154,14 +159,18 @@
         <div class="admin-bar" id="adminBar">
           <!-- 비로그인 상태 -->
           <div id="adminLoginArea" style="display:flex; align-items:center; gap:8px;">
-            <input class="admin-pw-input" type="password" id="adminPwInput"
-                   placeholder="관리자 비밀번호"
-                   onkeydown="if(event.key==='Enter') adminLogin()"/>
-            <button class="btn-secondary" onclick="adminLogin()">로그인</button>
+            <button class="btn-secondary btn-icon" id="adminLoginToggleBtn" onclick="toggleAdminLoginForm()" title="관리자 로그인">🔑</button>
+            <div id="adminLoginForm" style="display:none; align-items:center; gap:8px;">
+              <input class="admin-pw-input" type="password" id="adminPwInput"
+                     placeholder="관리자 비밀번호"
+                     onkeydown="if(event.key==='Enter') adminLogin()"/>
+              <button class="btn-secondary" onclick="adminLogin()">확인</button>
+              <button class="btn-secondary" onclick="toggleAdminLoginForm(false)">취소</button>
+            </div>
           </div>
+          <div class="form-err" id="adminLoginErr" style="margin-top:0;">비밀번호가 틀렸습니다.</div>
           <!-- 로그인 상태 -->
           <div id="adminActiveArea" style="display:none; align-items:center; gap:8px;">
-            <span class="admin-status on">● 관리자</span>
             <button class="btn-primary" onclick="openWriteModal()">
               <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
                 <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
@@ -241,15 +250,34 @@
   /* ── 관리자 로그인 ───────────────────────────────────────── */
   window.adminLogin = function () {
     var pw = document.getElementById('adminPwInput').value.trim();
+    var err = document.getElementById('adminLoginErr');
     if (!pw) return;
-    // 목록 API에 admin 헤더로 검증
-    fetch('/api/devlog', { headers: { 'X-Admin-Password': pw } })
-    .then(function(r) {
-      if (r.status === 403) { alert('비밀번호가 틀렸습니다.'); return; }
+    err.style.display = 'none';
+    verifyAdmin(pw).then(function(ok) {
+      if (!ok) {
+        err.textContent = '비밀번호가 틀렸습니다.';
+        err.style.display = 'block';
+        return;
+      }
       _adminPw = pw;
       sessionStorage.setItem('devlogAdmin', pw);
       setAdminUI(true);
     });
+  };
+
+  window.toggleAdminLoginForm = function (forceOpen) {
+    var form = document.getElementById('adminLoginForm');
+    var toggleBtn = document.getElementById('adminLoginToggleBtn');
+    var input = document.getElementById('adminPwInput');
+    var err = document.getElementById('adminLoginErr');
+    var open = typeof forceOpen === 'boolean' ? forceOpen : form.style.display === 'none';
+
+    form.style.display = open ? 'flex' : 'none';
+    toggleBtn.style.display = open ? 'none' : 'inline-flex';
+    input.value = '';
+    err.style.display = 'none';
+
+    if (open) input.focus();
   };
 
   window.adminLogout = function () {
@@ -261,7 +289,19 @@
   function setAdminUI(on) {
     document.getElementById('adminLoginArea').style.display  = on ? 'none'  : 'flex';
     document.getElementById('adminActiveArea').style.display = on ? 'flex'  : 'none';
+    document.getElementById('adminLoginErr').style.display   = 'none';
+    if (!on) {
+      document.getElementById('adminLoginForm').style.display = 'none';
+      document.getElementById('adminLoginToggleBtn').style.display = 'inline-flex';
+      document.getElementById('adminPwInput').value = '';
+    }
     loadList();
+  }
+
+  function verifyAdmin(pw) {
+    return fetch('/api/devlog/admin-check', { headers: { 'X-Admin-Password': pw } })
+      .then(function(r) { return r.ok; })
+      .catch(function() { return false; });
   }
 
   /* ── 목록 로드 ───────────────────────────────────────────── */
@@ -299,7 +339,7 @@
     .then(function(r) { return r.json(); })
     .then(function(d) {
       document.getElementById('detailTitle').textContent   = d.title;
-      document.getElementById('detailMeta').textContent    = '작성: ' + d.createdAt + (d.updatedAt !== d.createdAt ? '  ·  수정: ' + d.updatedAt : '');
+      document.getElementById('detailMeta').textContent    = '작성일: ' + d.createdAt;
       document.getElementById('detailContent').textContent = d.content;
 
       var tagsEl = document.getElementById('detailTags');
@@ -406,7 +446,19 @@
 
   /* ── 세션 복원 ───────────────────────────────────────────── */
   var saved = sessionStorage.getItem('devlogAdmin');
-  if (saved) { _adminPw = saved; setAdminUI(true); } else { loadList(); }
+  if (saved) {
+    verifyAdmin(saved).then(function(ok) {
+      if (ok) {
+        _adminPw = saved;
+        setAdminUI(true);
+        return;
+      }
+      sessionStorage.removeItem('devlogAdmin');
+      loadList();
+    });
+  } else {
+    loadList();
+  }
 
 }());
 </script>

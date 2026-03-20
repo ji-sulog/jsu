@@ -14,13 +14,13 @@ public class NoticeService {
         this.noticeRepository = noticeRepository;
     }
 
-    /** 전체 공지 목록 (sort_order 오름차순) */
+    /** 전체 공지 목록 (최신순) */
     public List<Notice> getAll() {
-        return noticeRepository.findAllByOrderBySortOrderAsc();
+        return noticeRepository.findAllByOrderBySortOrderDesc();
     }
 
-    /** 상단 배너에 표시할 pinned 공지 */
+    /** 상단 배너에 표시할 최신 공지 */
     public Optional<Notice> getPinned() {
-        return noticeRepository.findFirstByPinnedTrueOrderBySortOrderAsc();
+        return noticeRepository.findFirstByOrderBySortOrderDesc();
     }
 }

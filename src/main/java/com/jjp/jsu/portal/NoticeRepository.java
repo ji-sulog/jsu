@@ -6,6 +6,6 @@ import java.util.List;
 import java.util.Optional;
 
 public interface NoticeRepository extends JpaRepository<Notice, Long> {
-    List<Notice> findAllByOrderBySortOrderAsc();
-    Optional<Notice> findFirstByPinnedTrueOrderBySortOrderAsc();
+    List<Notice> findAllByOrderBySortOrderDesc();
+    Optional<Notice> findFirstByOrderBySortOrderDesc();
 }
