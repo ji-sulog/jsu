@@ -189,7 +189,6 @@ src/main/resources
 관련 문서:
 
 - [`logic-story.md`](/home/jskim/code/jsu/logic-story.md)
-- [`docs/flyway-rerun-v5-v6-local.md`](/home/jskim/code/jsu/docs/flyway-rerun-v5-v6-local.md)
 - [`docs/flyway-reset-local-db.md`](/home/jskim/code/jsu/docs/flyway-reset-local-db.md)
 
 ## 최근 정리 사항

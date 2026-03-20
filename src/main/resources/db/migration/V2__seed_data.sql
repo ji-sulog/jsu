@@ -1,4 +1,4 @@
--- ── 초기 도구 데이터 ──────────────────────────────────────────────────────────
+-- ── 도구 데이터 ──────────────────────────────────────────────────────────
 INSERT INTO tool (name, href, status, sort_order, icon,
                   description, tags, since,
                   status_label, button_label, status_class)
@@ -44,7 +44,7 @@ SELECT '서버 로그 분석기', NULL, 'COMING_SOON', 5, '🖥️',
        NULL, 'AI 연동 예정', 'AI 연동 후 오픈', 'planned'
 WHERE NOT EXISTS (SELECT 1 FROM tool WHERE sort_order = 5);
 
--- ── 초기 공지 데이터 ──────────────────────────────────────────────────────────
+-- ──  공지 데이터 ──────────────────────────────────────────────────────────
 INSERT INTO notice (type, title, body, display_date, sort_order, pinned)
 SELECT 'UPDATE', '요구사항 비교 도구 신규 오픈',
        '이전/최신 요구사항 문서를 붙여넣거나 파일로 업로드하면 변경 항목을 자동 감지하고 규칙 엔진(R01~R10)으로 중요도를 추천합니다. .txt · .md · .docx · .pptx · .pdf 파일 업로드를 지원합니다.',
