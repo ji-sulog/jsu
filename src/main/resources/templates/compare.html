@@ -1,0 +1,605 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>요구사항 비교 · JSU Portal</title>
+  <th:block th:replace="~{fragments/sidebar :: sidebarStyles}"></th:block>
+  <th:block th:replace="~{fragments/sidebar :: topbarStyles}"></th:block>
+  <style>
+    /* ── Reset / Base ─────────────────────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Segoe UI', 'Apple SD Gothic Neo', sans-serif; background: #f1f5f9; color: #1e293b; min-height: 100vh; }
+
+    /* ── Layout ───────────────────────────────────────────────── */
+    .layout { display: flex; min-height: 100vh; }
+
+    /* ── Main ─────────────────────────────────────────────────── */
+    .main { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+
+    /* ── Topbar ───────────────────────────────────────────────── */
+    .btn-help:hover { background: #e2e8f0; color: #1e293b; }
+
+    /* ── Page Content ─────────────────────────────────────────── */
+    .page { padding: 28px; flex: 1; overflow-y: auto; }
+
+    .page-header { margin-bottom: 24px; }
+    .page-header h1 { font-size: 1.4rem; font-weight: 700; color: #0f172a; }
+    .page-header p { color: #64748b; font-size: 0.875rem; margin-top: 4px; }
+
+    /* ── Input Panels ─────────────────────────────────────────── */
+    .input-section { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 20px; }
+
+    .panel { background: #fff; border-radius: 12px; border: 1px solid #e2e8f0; overflow: hidden; }
+    .panel-header {
+      padding: 10px 16px; font-size: 0.85rem; font-weight: 600;
+      display: flex; align-items: center; gap: 8px;
+    }
+    .panel-header.old { background: #fff1f2; color: #991b1b; border-bottom: 1px solid #fecaca; }
+    .panel-header.new { background: #f0fdf4; color: #166534; border-bottom: 1px solid #bbf7d0; }
+
+    .line-count-badge {
+      font-size: 0.72rem; font-weight: 500; padding: 2px 9px; border-radius: 99px;
+      background: rgba(0,0,0,0.08); white-space: nowrap; display: none;
+    }
+    .line-count-badge b { font-weight: 700; }
+
+    .btn-upload {
+      margin-left: auto; font-size: 0.75rem; font-weight: 600;
+      padding: 3px 10px; border-radius: 5px; border: 1px solid currentColor;
+      opacity: 0.65; cursor: pointer; transition: opacity .15s; user-select: none; white-space: nowrap;
+    }
+    .btn-upload:hover { opacity: 1; }
+    .file-badge {
+      font-size: 0.72rem; font-weight: 500; padding: 2px 8px; border-radius: 10px;
+      background: rgba(0,0,0,0.08); max-width: 160px;
+      overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    }
+    .panel textarea {
+      width: 100%; height: 240px; padding: 14px; border: none; resize: vertical;
+      font-size: 0.875rem; line-height: 1.6; font-family: inherit; outline: none; background: transparent;
+    }
+
+    /* ── Action Bar ───────────────────────────────────────────── */
+    .action-bar { display: flex; justify-content: center; margin-bottom: 28px; }
+    .btn-compare {
+      background: linear-gradient(135deg, #0284c7, #7c3aed); color: #fff; border: none;
+      padding: 12px 44px; border-radius: 9px; font-size: 1rem; font-weight: 700;
+      cursor: pointer; transition: opacity .15s, transform .1s;
+    }
+    .btn-compare:hover { opacity: .9; }
+    .btn-compare:active { transform: scale(.98); }
+    .btn-compare:disabled { opacity: .5; cursor: not-allowed; }
+
+    /* ── Summary Bar ──────────────────────────────────────────── */
+    .summary-bar {
+      background: #fff; border: 1px solid #e2e8f0; border-radius: 12px;
+      padding: 16px 24px; margin-bottom: 20px;
+      display: flex; align-items: center; gap: 16px; flex-wrap: wrap;
+    }
+    .summary-bar .total-count { font-size: 2rem; font-weight: 700; color: #1e293b; line-height: 1; }
+    .summary-bar .total-label { font-size: 0.9rem; color: #64748b; }
+    .summary-bar .type-counts { margin-left: auto; display: flex; gap: 16px; font-size: 0.85rem; color: #64748b; }
+    .summary-bar .type-counts span { display: flex; align-items: center; gap: 5px; }
+    .dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
+    .dot.added    { background: #16a34a; }
+    .dot.removed  { background: #dc2626; }
+    .dot.modified { background: #3b82f6; }
+
+    /* ── Results ──────────────────────────────────────────────── */
+    .results-header { font-size: 0.85rem; font-weight: 600; color: #94a3b8; margin-bottom: 10px; text-transform: uppercase; letter-spacing: .06em; }
+    .change-list { display: flex; flex-direction: column; gap: 10px; }
+
+    .change-item {
+      background: #fff; border-radius: 10px; border: 1px solid #e2e8f0;
+      border-left-width: 4px; padding: 14px 18px;
+    }
+    .change-item.HIGH    { border-left-color: #dc2626; }
+    .change-item.MEDIUM  { border-left-color: #d97706; }
+    .change-item.LOW     { border-left-color: #3b82f6; }
+    .change-item.GENERAL { border-left-color: #cbd5e1; }
+
+    .change-meta { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; flex-wrap: wrap; }
+    .badge { font-size: 0.72rem; font-weight: 700; padding: 2px 8px; border-radius: 4px; letter-spacing: .04em; }
+    .badge.HIGH    { background: #fee2e2; color: #dc2626; }
+    .badge.MEDIUM  { background: #fef3c7; color: #b45309; }
+    .badge.LOW     { background: #dbeafe; color: #1e40af; }
+    .badge.GENERAL { background: #f1f5f9; color: #64748b; }
+    .badge.ADDED    { background: #dcfce7; color: #166534; }
+    .badge.REMOVED  { background: #fee2e2; color: #991b1b; }
+    .badge.MODIFIED { background: #ede9fe; color: #5b21b6; }
+    .score-chip { font-size: 0.72rem; color: #94a3b8; margin-left: auto; }
+
+    .reasons { display: flex; flex-wrap: wrap; gap: 5px; margin-bottom: 10px; }
+    .reason-tag { font-size: 0.72rem; background: #f8fafc; border: 1px solid #e2e8f0; color: #475569; padding: 2px 8px; border-radius: 12px; }
+
+    .check-bar { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 12px; padding-top: 10px; border-top: 1px solid #f1f5f9; }
+    .check-btn {
+      font-size: 0.75rem; padding: 3px 10px; border-radius: 12px;
+      border: 1px solid #e2e8f0; background: #f8fafc; color: #64748b;
+      cursor: pointer; transition: all .15s; user-select: none;
+    }
+    .check-btn:hover { border-color: #94a3b8; color: #334155; }
+    .check-btn.active { background: #1e293b; color: #fff; border-color: #1e293b; }
+
+    .content-rows { display: flex; flex-direction: column; gap: 6px; }
+    .content-row { display: flex; align-items: flex-start; gap: 10px; font-size: 0.875rem; line-height: 1.65; }
+    .content-label { min-width: 38px; font-size: 0.72rem; font-weight: 700; color: #94a3b8; padding-top: 6px; flex-shrink: 0; }
+    .content-box { flex: 1; padding: 5px 12px; border-radius: 6px; white-space: pre-wrap; word-break: break-word; }
+    .content-box.added    { background: #f0fdf4; color: #14532d; }
+    .content-box.removed  { background: #fff1f2; color: #9f1239; }
+    .content-box.old-line { background: #fff1f2; color: #374151; }
+    .content-box.new-line { background: #f0fdf4; color: #374151; }
+
+    .wd-del { background: #fecaca; color: #991b1b; text-decoration: line-through; border-radius: 3px; padding: 1px 3px; margin: 0 1px; }
+    .wd-ins { background: #bbf7d0; color: #166534; border-radius: 3px; padding: 1px 3px; margin: 0 1px; font-weight: 700; }
+
+    /* ── Empty / Loading ──────────────────────────────────────── */
+    .empty-state { text-align: center; padding: 60px 20px; color: #94a3b8; font-size: 0.95rem; }
+    .loading { text-align: center; padding: 40px; color: #0284c7; font-size: 0.95rem; }
+
+    /* ── Modal (공통) ─────────────────────────────────────────── */
+    .modal-overlay {
+      display: none; position: fixed; inset: 0;
+      background: rgba(0,0,0,.45); z-index: 1000;
+      align-items: center; justify-content: center;
+    }
+    .modal-overlay.open { display: flex; }
+
+    /* 사용 가이드 모달 */
+    .guide-modal {
+      background: #fff; border-radius: 14px;
+      width: 700px; max-width: 95vw; max-height: 88vh;
+      display: flex; flex-direction: column;
+      box-shadow: 0 20px 60px rgba(0,0,0,.25); overflow: hidden;
+    }
+    .modal-header {
+      padding: 20px 24px 16px; border-bottom: 1px solid #e2e8f0;
+      display: flex; align-items: center; gap: 10px;
+    }
+    .modal-header h2 { font-size: 1.05rem; font-weight: 700; color: #1e293b; flex: 1; }
+    .modal-close { background: none; border: none; font-size: 1.3rem; color: #94a3b8; cursor: pointer; padding: 2px 6px; border-radius: 4px; }
+    .modal-close:hover { background: #f1f5f9; color: #334155; }
+    .modal-body { padding: 24px; overflow-y: auto; line-height: 1.7; color: #374151; font-size: 0.9rem; }
+    .modal-body h3 { font-size: 0.95rem; font-weight: 700; color: #1e293b; margin: 20px 0 8px; padding-bottom: 6px; border-bottom: 2px solid #e2e8f0; }
+    .modal-body h3:first-child { margin-top: 0; }
+    .modal-body p { margin-bottom: 8px; }
+    .modal-body ul { padding-left: 18px; margin-bottom: 10px; }
+    .modal-body li { margin-bottom: 4px; }
+    .modal-body .highlight-box { background: #f0f9ff; border-left: 3px solid #3b82f6; padding: 10px 14px; border-radius: 0 6px 6px 0; margin: 10px 0; font-size: 0.875rem; }
+    .modal-body table { width: 100%; border-collapse: collapse; font-size: 0.83rem; margin: 10px 0; }
+    .modal-body th { background: #f8fafc; padding: 7px 12px; text-align: left; font-weight: 600; border: 1px solid #e2e8f0; color: #475569; }
+    .modal-body td { padding: 7px 12px; border: 1px solid #e2e8f0; vertical-align: top; }
+    .pill { display: inline-block; font-size: 0.72rem; font-weight: 700; padding: 1px 8px; border-radius: 10px; }
+    .pill.high   { background: #fee2e2; color: #dc2626; }
+    .pill.medium { background: #fef3c7; color: #b45309; }
+    .pill.low    { background: #dbeafe; color: #1e40af; }
+    .pill.general{ background: #f1f5f9; color: #64748b; }
+
+    /* 파일 오류 모달 */
+    .file-err-modal { background: #fff; border-radius: 14px; width: 420px; max-width: 95vw; box-shadow: 0 20px 60px rgba(0,0,0,.25); overflow: hidden; }
+    .file-err-header { padding: 18px 24px 14px; display: flex; align-items: center; gap: 10px; border-bottom: 1px solid #fecaca; background: #fff1f2; }
+    .file-err-header h2 { font-size: 1rem; font-weight: 700; color: #9f1239; }
+    .file-err-body { padding: 18px 24px; font-size: 0.9rem; color: #374151; line-height: 1.65; }
+    .file-err-body .supported-list { margin-top: 12px; background: #f8fafc; border-radius: 8px; padding: 10px 14px; font-size: 0.82rem; color: #475569; }
+    .file-err-body .supported-list span { display: inline-block; margin: 2px 4px; background: #e2e8f0; border-radius: 4px; padding: 1px 7px; font-family: monospace; }
+    .file-err-footer { padding: 12px 24px 18px; display: flex; justify-content: flex-end; }
+    .btn-err-ok { padding: 8px 22px; border-radius: 7px; border: none; background: #1e293b; color: #fff; font-size: 0.875rem; font-weight: 600; cursor: pointer; }
+    .btn-err-ok:hover { background: #334155; }
+
+    /* 유사도 경고 모달 */
+    .warn-modal { background: #fff; border-radius: 14px; width: 460px; max-width: 95vw; box-shadow: 0 20px 60px rgba(0,0,0,.25); overflow: hidden; }
+    .warn-header { padding: 20px 24px 16px; display: flex; align-items: center; gap: 10px; border-bottom: 1px solid #fde68a; background: #fffbeb; }
+    .warn-header h2 { font-size: 1rem; font-weight: 700; color: #92400e; }
+    .warn-body { padding: 20px 24px; font-size: 0.9rem; color: #374151; line-height: 1.65; }
+    .warn-body .similarity-bar-wrap { margin: 14px 0; background: #f1f5f9; border-radius: 6px; overflow: hidden; height: 8px; }
+    .warn-body .similarity-bar { height: 100%; background: #f59e0b; border-radius: 6px; transition: width .4s; }
+    .warn-body .similarity-text { font-size: 0.82rem; color: #64748b; margin-top: 6px; }
+    .warn-footer { padding: 14px 24px 20px; display: flex; gap: 10px; justify-content: flex-end; }
+    .btn-cancel-warn { padding: 8px 18px; border-radius: 7px; border: 1px solid #e2e8f0; background: #f8fafc; color: #374151; font-size: 0.875rem; cursor: pointer; }
+    .btn-cancel-warn:hover { background: #e2e8f0; }
+    .btn-proceed { padding: 8px 18px; border-radius: 7px; border: none; background: #f59e0b; color: #fff; font-size: 0.875rem; font-weight: 600; cursor: pointer; }
+    .btn-proceed:hover { background: #d97706; }
+
+    /* ── Responsive ───────────────────────────────────────────── */
+    @media (max-width: 900px) {
+      .input-section { grid-template-columns: 1fr; }
+      .sidebar { display: none; }
+      .summary-bar .type-counts { display: none; }
+    }
+  </style>
+</head>
+<body>
+<div class="layout">
+
+  <!-- ── Sidebar ───────────────────────────── -->
+  <th:block th:replace="~{fragments/sidebar :: sidebarFull('/compare')}"></th:block>
+
+  <!-- ── Main ──────────────────────────────── -->
+  <div class="main">
+
+    <!-- Topbar -->
+    <th:block th:replace="~{fragments/sidebar :: topbarFull('요구사항 비교', 'openModal()')}"></th:block>
+
+    <!-- Page -->
+    <div class="page">
+
+      <div class="page-header">
+        <h1>📋 요구사항 변경 검토 보조</h1>
+        <p>이전/최신 요구사항을 비교해 변경 항목을 탐지하고 중요도를 추천합니다. 자동 판정이 아닌 검토 보조 목적입니다.</p>
+      </div>
+
+      <!-- 입력 영역 -->
+      <div class="input-section">
+        <div class="panel">
+          <div class="panel-header old">
+            ● 이전 요구사항
+            <span class="file-badge" id="oldFileBadge" style="display:none;"></span>
+            <span class="line-count-badge" id="oldLineCount"><b id="oldLineNum">0</b>줄</span>
+            <label class="btn-upload" for="oldFileInput" title="지원: .txt .md .docx .pptx .pdf(텍스트형)">📎 파일 업로드</label>
+            <input type="file" id="oldFileInput" accept=".txt,.md,.docx,.pptx,.pdf" style="display:none" onchange="handleFileUpload(this, 'old')">
+          </div>
+          <textarea id="oldText" placeholder="이전 버전의 요구사항 문서를 붙여넣거나, 파일을 업로드하세요..."></textarea>
+        </div>
+        <div class="panel">
+          <div class="panel-header new">
+            ● 최신 요구사항
+            <span class="file-badge" id="newFileBadge" style="display:none;"></span>
+            <span class="line-count-badge" id="newLineCount"><b id="newLineNum">0</b>줄</span>
+            <label class="btn-upload" for="newFileInput" title="지원: .txt .md .docx .pptx .pdf(텍스트형)">📎 파일 업로드</label>
+            <input type="file" id="newFileInput" accept=".txt,.md,.docx,.pptx,.pdf" style="display:none" onchange="handleFileUpload(this, 'new')">
+          </div>
+          <textarea id="newText" placeholder="최신 버전의 요구사항 문서를 붙여넣거나, 파일을 업로드하세요..."></textarea>
+        </div>
+      </div>
+
+      <div class="action-bar">
+        <button class="btn-compare" id="compareBtn" onclick="runCompare()">변경 사항 비교하기</button>
+      </div>
+
+      <!-- 결과 영역 -->
+      <div id="resultSection" style="display:none;">
+        <div class="summary-bar">
+          <div class="total-count" id="totalCount">0</div>
+          <div class="total-label">건 변경됨</div>
+          <div class="type-counts">
+            <span style="color:#dc2626;font-weight:600;">🔴 <span id="highCount">0</span></span>
+            <span style="color:#d97706;font-weight:600;">🟡 <span id="mediumCount">0</span></span>
+            <span style="color:#3b82f6;font-weight:600;">🔵 <span id="lowCount">0</span></span>
+            <span style="color:#94a3b8;">⚪ <span id="generalCount">0</span></span>
+            <span style="border-left:1px solid #e2e8f0;padding-left:16px;">
+              <i class="dot added"></i><span id="addedCount">0</span> 추가&nbsp;
+              <i class="dot removed"></i><span id="removedCount">0</span> 삭제&nbsp;
+              <i class="dot modified"></i><span id="modifiedCount">0</span> 수정
+            </span>
+          </div>
+        </div>
+        <div class="results-header">변경 항목</div>
+        <div class="change-list" id="changeList"></div>
+      </div>
+
+      <div id="emptyState" class="empty-state" style="display:none;">✅ 두 문서 사이에 변경된 내용이 없습니다.</div>
+      <div id="loadingState" class="loading" style="display:none;">비교 중...</div>
+
+    </div><!-- /page -->
+  </div><!-- /main -->
+</div><!-- /layout -->
+
+<!-- ── 사용 가이드 모달 ───────────────────────────────── -->
+<div class="modal-overlay" id="modalOverlay" onclick="closeOnOverlay(event)">
+  <div class="guide-modal">
+    <div class="modal-header">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#3b82f6" stroke-width="2">
+        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+        <polyline points="14 2 14 8 20 8"/>
+      </svg>
+      <h2>요구사항 변경 검토 보조 — 사용 가이드</h2>
+      <button class="modal-close" onclick="closeModal()">✕</button>
+    </div>
+    <div class="modal-body">
+      <h3>이 도구를 왜 만들었나요?</h3>
+      <p>요구사항 문서는 프로젝트가 진행되는 동안 계속 바뀝니다. 그런데 바뀐 문서를 받았을 때 이런 문제가 반복됩니다.</p>
+      <ul>
+        <li>어디가 바뀌었는지 빠르게 파악하기 어렵다</li>
+        <li>단순 문구 수정인지, 실제 기능·정책 변경인지 구분하기 어렵다</li>
+        <li>권한, 숫자, 예외 조건 같은 중요한 변경을 놓칠 수 있다</li>
+        <li>놓친 변경이 재작업·장애·커뮤니케이션 비용으로 이어진다</li>
+      </ul>
+      <div class="highlight-box">
+        이 도구는 <strong>자동 판정기가 아닙니다.</strong><br>
+        맞춤법 검사기처럼 — <em>"이 부분이 중요할 수 있으니 먼저 봐주세요"</em> 라고 추천만 합니다.<br>
+        최종 판단은 항상 사람이 합니다.
+      </div>
+
+      <h3>사용 방법</h3>
+      <ul>
+        <li><strong>이전 요구사항</strong> 칸에 기존 문서 텍스트를 붙여넣거나 파일을 업로드합니다</li>
+        <li><strong>최신 요구사항</strong> 칸에 새 문서 텍스트를 붙여넣거나 파일을 업로드합니다</li>
+        <li><strong>변경 사항 비교하기</strong> 버튼을 클릭합니다</li>
+        <li>결과 목록을 위에서부터 순서대로 검토합니다</li>
+      </ul>
+      <p style="font-size:0.82rem;color:#64748b;">지원 파일 형식: .txt · .md · .docx · .pptx · .pdf(텍스트형). 스캔 PDF는 지원하지 않습니다.</p>
+
+      <h3>결과 보는 법 — 중요도</h3>
+      <p>각 변경 항목은 규칙 엔진이 점수를 계산해 중요도를 추천합니다.</p>
+      <table>
+        <tr><th>중요도</th><th>점수</th><th>의미</th><th>주요 감지 패턴</th></tr>
+        <tr><td><span class="pill high">🔴 높음</span></td><td>7점 이상</td><td>먼저 확인 권장</td><td>권한 변경, 의미 반전(가능↔불가), 상태·절차 변경</td></tr>
+        <tr><td><span class="pill medium">🟡 확인 필요</span></td><td>4 ~ 6점</td><td>검토 권장</td><td>숫자·기간 변경, 필수 여부 변경, 예외·조건 변경</td></tr>
+        <tr><td><span class="pill low">🔵 낮음</span></td><td>1 ~ 3점</td><td>가볍게 확인</td><td>중요 섹션 내 소규모 변경, 중요 문장 삭제</td></tr>
+        <tr><td><span class="pill general">⚪ 일반</span></td><td>0점</td><td>단순 문구 수정 가능성</td><td>동의어 치환, 어미·조사 수준 변경</td></tr>
+      </table>
+      <p style="font-size:0.8rem;color:#94a3b8;">※ 중요도는 추천값입니다. 실제 영향 여부는 담당자가 직접 판단해야 합니다.</p>
+
+      <h3>결과 보는 법 — 이유 태그</h3>
+      <ul>
+        <li><strong>주체 또는 권한 관련 변경</strong> — 사용자/관리자/권한 등 주체가 바뀜</li>
+        <li><strong>허용 여부 변경</strong> — 가능/불가/허용/금지 등 변경</li>
+        <li><strong>필수 여부 변경</strong> — 필수/선택 여부 변경</li>
+        <li><strong>숫자 또는 제한값 변경</strong> — 수치·횟수·기간 변경</li>
+        <li><strong>상태 또는 절차 변경</strong> — 승인·반려·단계 변경</li>
+        <li><strong>예외 또는 조건 변경</strong> — 예외·조건·단서 조항 변경</li>
+        <li><strong>중요 문장 삭제 (삭제 가중치)</strong> — 중요 키워드가 포함된 문장이 삭제됨. 권한·예외 삭제 +3, 상태·필수 삭제 +2</li>
+        <li><strong>의미 반전: A ↔ B</strong> — 가능↔불가, 포함↔제외, 필수↔선택 등 정책 방향 반전 감지</li>
+        <li><strong>권한·조건 반전 복합 감지</strong> — 의미 반전 + 권한/예외 조건 동시 발생 시 추가 +2점</li>
+        <li><strong>필수 여부 반전 복합 감지</strong> — 의미 반전 + 필수/선택 키워드 동시 발생 시 추가 +1점</li>
+      </ul>
+
+      <h3>결과 보는 법 — 검토 체크 항목</h3>
+      <p>각 카드 하단의 버튼을 클릭해 검토 상태를 표시할 수 있습니다.</p>
+      <ul>
+        <li><strong>중요</strong> — 이 변경이 중요하다고 판단됨</li>
+        <li><strong>개발 반영 필요</strong> — 코드·로직 수정이 필요함</li>
+        <li><strong>운영 반영 필요</strong> — 운영 정책·설정 변경이 필요함</li>
+        <li><strong>단순 문구 수정</strong> — 의미 변화 없는 표현 수정으로 판단</li>
+        <li><strong>확인 완료</strong> — 검토를 마쳤음</li>
+      </ul>
+      <p style="font-size:0.8rem;color:#94a3b8;">※ 체크 상태는 현재 세션에서만 유지됩니다.</p>
+    </div>
+  </div>
+</div>
+
+<!-- ── 파일 오류 모달 ─────────────────────────────────── -->
+<div class="modal-overlay" id="fileErrOverlay">
+  <div class="file-err-modal">
+    <div class="file-err-header">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#dc2626" stroke-width="2">
+        <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+      </svg>
+      <h2 id="fileErrTitle">파일을 읽을 수 없습니다</h2>
+    </div>
+    <div class="file-err-body">
+      <p id="fileErrMsg"></p>
+      <div class="supported-list" id="fileErrSupportedWrap" style="display:none;">
+        지원 형식: <span>.txt</span><span>.md</span><span>.docx</span><span>.pptx</span><span>.pdf (텍스트형)</span>
+      </div>
+    </div>
+    <div class="file-err-footer">
+      <button class="btn-err-ok" onclick="closeFileErr()">확인</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── 유사도 경고 모달 ───────────────────────────────── -->
+<div class="modal-overlay" id="warnOverlay">
+  <div class="warn-modal">
+    <div class="warn-header">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#d97706" stroke-width="2">
+        <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+        <line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>
+      </svg>
+      <h2>두 문서의 내용이 많이 다릅니다</h2>
+    </div>
+    <div class="warn-body">
+      <p>비교하려는 두 문서의 <strong>단어 유사도가 <span id="warnSimilarity">0</span>%</strong>로, 같은 주제의 문서가 아닐 가능성이 있습니다.</p>
+      <div class="similarity-bar-wrap"><div class="similarity-bar" id="warnBar" style="width:0%"></div></div>
+      <p class="similarity-text">유사도 15% 미만이면 이 경고가 표시됩니다.</p>
+      <p style="margin-top:10px;">이전 문서와 최신 문서가 <strong>같은 요구사항</strong>을 다루는 문서인지 다시 확인해 주세요.</p>
+    </div>
+    <div class="warn-footer">
+      <button class="btn-cancel-warn" onclick="closeWarn()">다시 확인하기</button>
+      <button class="btn-proceed" onclick="proceedCompare()">그래도 비교하기</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  /* ── 파일 업로드 ─────────────────────────────────────── */
+  async function handleFileUpload(input, side) {
+    const file = input.files[0];
+    if (!file) return;
+    const name = file.name.toLowerCase();
+    const allowed = ['.txt', '.md', '.docx', '.pptx', '.pdf'];
+    const ext = name.includes('.') ? '.' + name.split('.').pop() : '';
+    if (!allowed.includes(ext)) {
+      showFileErr('지원하지 않는 파일 형식입니다', `"${file.name}" 파일은 지원되지 않습니다.`, true);
+      input.value = ''; return;
+    }
+    const badge = document.getElementById(side + 'FileBadge');
+    badge.textContent = '불러오는 중...'; badge.style.display = 'inline-block';
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      const res = await fetch('/api/upload', { method: 'POST', body: formData });
+      const data = await res.json();
+      if (data.errorType === 'SCAN_PDF') {
+        showFileErr('스캔 PDF는 지원하지 않습니다', `"${file.name}"은 스캔된 PDF로 보입니다.\n텍스트 레이어가 없어 내용을 추출할 수 없습니다.`, false);
+        badge.style.display = 'none'; input.value = ''; return;
+      }
+      if (data.errorType) {
+        showFileErr('파일 처리 오류', data.error, false);
+        badge.style.display = 'none'; input.value = ''; return;
+      }
+      document.getElementById(side + 'Text').value = data.text;
+      badge.textContent = '📄 ' + file.name; badge.style.display = 'inline-block';
+      const numId = side + 'LineNum', badgeId = side + 'LineCount';
+      updateLineCount(side + 'Text', numId, badgeId);
+    } catch (e) {
+      showFileErr('파일 처리 오류', '서버와 통신 중 오류가 발생했습니다: ' + e.message, false);
+      badge.style.display = 'none'; input.value = '';
+    }
+  }
+
+  function showFileErr(title, msg, showSupported) {
+    document.getElementById('fileErrTitle').textContent = title;
+    document.getElementById('fileErrMsg').textContent = msg;
+    document.getElementById('fileErrSupportedWrap').style.display = showSupported ? 'block' : 'none';
+    document.getElementById('fileErrOverlay').classList.add('open');
+    document.body.style.overflow = 'hidden';
+  }
+  function closeFileErr() { document.getElementById('fileErrOverlay').classList.remove('open'); document.body.style.overflow = ''; }
+
+  /* ── API 호출 ─────────────────────────────────────────── */
+  const SIMILARITY_THRESHOLD = 0.15;
+
+  function runCompare() {
+    const oldText = document.getElementById('oldText').value;
+    const newText = document.getElementById('newText').value;
+    if (!oldText.trim() || !newText.trim()) { alert('이전 요구사항과 최신 요구사항을 모두 입력해 주세요.'); return; }
+    const sim = calcJaccard(oldText, newText);
+    if (sim < SIMILARITY_THRESHOLD) {
+      const pct = Math.round(sim * 100);
+      document.getElementById('warnSimilarity').textContent = pct;
+      document.getElementById('warnBar').style.width = pct + '%';
+      document.getElementById('warnOverlay').classList.add('open');
+      document.body.style.overflow = 'hidden'; return;
+    }
+    doFetch(oldText, newText);
+  }
+
+  function closeWarn() { document.getElementById('warnOverlay').classList.remove('open'); document.body.style.overflow = ''; }
+  function proceedCompare() { closeWarn(); doFetch(document.getElementById('oldText').value, document.getElementById('newText').value); }
+
+  async function doFetch(oldText, newText) {
+    const btn = document.getElementById('compareBtn');
+    btn.disabled = true;
+    document.getElementById('resultSection').style.display = 'none';
+    document.getElementById('emptyState').style.display = 'none';
+    document.getElementById('loadingState').style.display = 'block';
+    try {
+      const res = await fetch('/api/compare', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ oldText, newText })
+      });
+      if (!res.ok) throw new Error('서버 오류: ' + res.status);
+      renderResult(await res.json());
+    } catch (e) {
+      alert('비교 중 오류가 발생했습니다: ' + e.message);
+    } finally {
+      btn.disabled = false;
+      document.getElementById('loadingState').style.display = 'none';
+    }
+  }
+
+  /* ── Jaccard 유사도 ───────────────────────────────────── */
+  function calcJaccard(textA, textB) {
+    const words = t => new Set(t.toLowerCase().match(/[가-힣a-z0-9]+/g) || []);
+    const a = words(textA), b = words(textB);
+    if (a.size === 0 && b.size === 0) return 1.0;
+    let intersection = 0;
+    a.forEach(w => { if (b.has(w)) intersection++; });
+    return intersection / (a.size + b.size - intersection);
+  }
+
+  /* ── 결과 렌더링 ──────────────────────────────────────── */
+  function renderResult(data) {
+    if (data.totalChanges === 0) { document.getElementById('emptyState').style.display = 'block'; return; }
+    document.getElementById('totalCount').textContent = data.totalChanges;
+    let added = 0, removed = 0, modified = 0;
+    data.changes.forEach(c => { if (c.type==='ADDED') added++; if (c.type==='REMOVED') removed++; if (c.type==='MODIFIED') modified++; });
+    document.getElementById('addedCount').textContent   = added;
+    document.getElementById('removedCount').textContent = removed;
+    document.getElementById('modifiedCount').textContent = modified;
+    document.getElementById('highCount').textContent    = data.highCount;
+    document.getElementById('mediumCount').textContent  = data.mediumCount;
+    document.getElementById('lowCount').textContent     = data.lowCount;
+    document.getElementById('generalCount').textContent = data.generalCount;
+
+    const list = document.getElementById('changeList');
+    list.innerHTML = '';
+    const priorityLabel = { HIGH:'🔴 높음', MEDIUM:'🟡 확인 필요', LOW:'🔵 낮음', GENERAL:'⚪ 일반' };
+    const typeLabel     = { ADDED:'추가', REMOVED:'삭제', MODIFIED:'수정' };
+    const checkItems    = ['중요', '개발 반영 필요', '운영 반영 필요', '단순 문구 수정', '확인 완료'];
+
+    data.changes.forEach(item => {
+      const div = document.createElement('div');
+      div.className = `change-item ${item.priority}`;
+      const reasonsHtml = (item.reasons||[]).map(r => `<span class="reason-tag">${escHtml(r)}</span>`).join('');
+      let contentHtml = '';
+      if (item.type === 'MODIFIED') {
+        contentHtml = `<div class="content-rows">
+          <div class="content-row"><span class="content-label">이전</span><div class="content-box old-line">${buildSideDiff(item.oldContent, item.newContent, 'old')}</div></div>
+          <div class="content-row"><span class="content-label">변경</span><div class="content-box new-line">${buildSideDiff(item.oldContent, item.newContent, 'new')}</div></div>
+        </div>`;
+      } else if (item.type === 'REMOVED') {
+        contentHtml = `<div class="content-rows"><div class="content-row"><span class="content-label">삭제됨</span><div class="content-box removed">${escHtml(item.oldContent)}</div></div></div>`;
+      } else {
+        contentHtml = `<div class="content-rows"><div class="content-row"><span class="content-label">추가됨</span><div class="content-box added">${escHtml(item.newContent)}</div></div></div>`;
+      }
+      const checkBtns = checkItems.map(label => `<button class="check-btn" onclick="toggleCheck(this)">${label}</button>`).join('');
+      div.innerHTML = `
+        <div class="change-meta">
+          <span class="badge ${item.priority}">${priorityLabel[item.priority]||item.priority}</span>
+          <span class="badge ${item.type}">${typeLabel[item.type]||item.type}</span>
+          <span class="score-chip">${item.score}점</span>
+        </div>
+        ${reasonsHtml ? `<div class="reasons">${reasonsHtml}</div>` : ''}
+        ${contentHtml}
+        <div class="check-bar">${checkBtns}</div>`;
+      list.appendChild(div);
+    });
+    document.getElementById('resultSection').style.display = 'block';
+    document.getElementById('resultSection').scrollIntoView({ behavior: 'smooth' });
+  }
+
+  /* ── 단어 단위 Diff ───────────────────────────────────── */
+  function buildSideDiff(oldStr, newStr, side) {
+    const tokenize = s => s.match(/\S+|\s+/g) || [];
+    const diff = lcsTokenDiff(tokenize(oldStr||''), tokenize(newStr||''));
+    if (side === 'old') {
+      return diff.filter(d => d.type !== 'added').map(({type, text}) => type==='removed' ? `<span class="wd-del">${escHtml(text)}</span>` : escHtml(text)).join('');
+    } else {
+      return diff.filter(d => d.type !== 'removed').map(({type, text}) => type==='added' ? `<span class="wd-ins">${escHtml(text)}</span>` : escHtml(text)).join('');
+    }
+  }
+
+  function lcsTokenDiff(oldT, newT) {
+    const m = oldT.length, n = newT.length;
+    const dp = Array.from({ length: m+1 }, () => new Int32Array(n+1));
+    for (let i=1;i<=m;i++) for (let j=1;j<=n;j++)
+      dp[i][j] = oldT[i-1]===newT[j-1] ? dp[i-1][j-1]+1 : Math.max(dp[i-1][j], dp[i][j-1]);
+    const result = []; let i=m, j=n;
+    while (i>0||j>0) {
+      if (i>0&&j>0&&oldT[i-1]===newT[j-1]) { result.unshift({type:'same',text:oldT[i-1]}); i--;j--; }
+      else if (j>0&&(i===0||dp[i][j-1]>=dp[i-1][j])) { result.unshift({type:'added',text:newT[j-1]}); j--; }
+      else { result.unshift({type:'removed',text:oldT[i-1]}); i--; }
+    }
+    return result;
+  }
+
+  /* ── 모달 ─────────────────────────────────────────────── */
+  function openModal() { document.getElementById('modalOverlay').classList.add('open'); document.body.style.overflow = 'hidden'; }
+  function closeModal() { document.getElementById('modalOverlay').classList.remove('open'); document.body.style.overflow = ''; }
+  function closeOnOverlay(e) { if (e.target === document.getElementById('modalOverlay')) closeModal(); }
+  document.addEventListener('keydown', e => { if (e.key==='Escape') { closeModal(); closeFileErr(); closeWarn(); } });
+
+  function toggleCheck(btn) { btn.classList.toggle('active'); }
+
+  function escHtml(str) {
+    return (str||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+
+  /* ── Line Count ──────────────────────────── */
+  function updateLineCount(textareaId, numId, badgeId) {
+    const val = document.getElementById(textareaId).value;
+    const badge = document.getElementById(badgeId);
+    if (!val.trim()) { badge.style.display = 'none'; return; }
+    document.getElementById(numId).textContent = val.split('\n').length.toLocaleString();
+    badge.style.display = 'inline-block';
+  }
+
+  document.getElementById('oldText').addEventListener('input', () => updateLineCount('oldText', 'oldLineNum', 'oldLineCount'));
+  document.getElementById('newText').addEventListener('input', () => updateLineCount('newText', 'newLineNum', 'newLineCount'));
+</script>
+</body>
+</html>

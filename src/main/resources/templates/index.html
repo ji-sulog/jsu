@@ -1,0 +1,592 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>JSU 관리 포털</title>
+    <th:block th:replace="~{fragments/sidebar :: sidebarStyles}"></th:block>
+    <th:block th:replace="~{fragments/sidebar :: topbarStyles}"></th:block>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: 'Segoe UI', 'Apple SD Gothic Neo', sans-serif;
+            background: #f1f5f9;
+            color: #1e293b;
+            min-height: 100vh;
+            display: flex;
+        }
+
+        /* ── 메인 콘텐츠 ────────────────────────────────── */
+        .main-wrap {
+            flex: 1;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* 콘텐츠 영역 */
+        .content {
+            padding: 32px;
+            flex: 1;
+        }
+
+        /* 공지 배너 */
+        .notice-banner {
+            background: linear-gradient(135deg, #1e40af 0%, #1d4ed8 100%);
+            border-radius: 12px;
+            padding: 20px 28px;
+            color: #fff;
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            margin-bottom: 28px;
+            position: relative;
+            overflow: hidden;
+        }
+        .notice-banner::after {
+            content: '';
+            position: absolute;
+            right: -20px;
+            top: -30px;
+            width: 160px;
+            height: 160px;
+            border-radius: 50%;
+            background: rgba(255,255,255,0.05);
+        }
+        .notice-banner .notice-icon {
+            background: rgba(255,255,255,0.15);
+            border-radius: 10px;
+            padding: 10px;
+            flex-shrink: 0;
+        }
+        .notice-banner h2 {
+            font-size: 1rem;
+            font-weight: 700;
+            margin-bottom: 4px;
+        }
+        .notice-banner p {
+            font-size: 0.85rem;
+            color: rgba(255,255,255,0.8);
+            line-height: 1.5;
+        }
+        .notice-banner .notice-date {
+            margin-left: auto;
+            font-size: 0.75rem;
+            color: rgba(255,255,255,0.5);
+            white-space: nowrap;
+            flex-shrink: 0;
+        }
+
+        /* 통계 카드 행 */
+        .stats-row {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 16px;
+            margin-bottom: 28px;
+        }
+        .stat-card {
+            background: #fff;
+            border-radius: 10px;
+            border: 1px solid #e2e8f0;
+            padding: 18px 20px;
+            display: flex;
+            align-items: center;
+            gap: 14px;
+        }
+        .stat-icon {
+            width: 42px;
+            height: 42px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+        .stat-icon.blue   { background: #eff6ff; }
+        .stat-icon.green  { background: #f0fdf4; }
+        .stat-icon.purple { background: #faf5ff; }
+        .stat-icon.amber  { background: #fffbeb; }
+        .stat-value {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #1e293b;
+            line-height: 1;
+            margin-bottom: 3px;
+        }
+        .stat-label {
+            font-size: 0.78rem;
+            color: #64748b;
+        }
+
+        /* 섹션 헤더 */
+        .section-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 16px;
+        }
+        .section-header h2 {
+            font-size: 1rem;
+            font-weight: 700;
+            color: #1e293b;
+        }
+        .section-header .count-badge {
+            font-size: 0.72rem;
+            background: #f1f5f9;
+            color: #64748b;
+            border: 1px solid #e2e8f0;
+            padding: 1px 8px;
+            border-radius: 10px;
+        }
+
+        /* 도구 카드 그리드 */
+        .tools-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 16px;
+            margin-bottom: 32px;
+        }
+
+        .tool-card {
+            background: #fff;
+            border-radius: 12px;
+            border: 1px solid #e2e8f0;
+            padding: 22px;
+            transition: box-shadow 0.2s, transform 0.15s;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+        .tool-card.active {
+            cursor: pointer;
+            border-color: #bfdbfe;
+        }
+        .tool-card.active:hover {
+            box-shadow: 0 8px 24px rgba(59,130,246,0.12);
+            transform: translateY(-2px);
+        }
+        .tool-card.coming {
+            background: #fafafa;
+            border-style: dashed;
+            border-color: #e2e8f0;
+        }
+
+        .tool-card-header {
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+        }
+        .tool-card-icon {
+            width: 44px;
+            height: 44px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+        .tool-card-icon.blue   { background: #eff6ff; }
+        .tool-card-icon.slate  { background: #f1f5f9; }
+        .tool-card-meta { flex: 1; }
+        .tool-card-name {
+            font-size: 0.95rem;
+            font-weight: 700;
+            color: #1e293b;
+            margin-bottom: 2px;
+        }
+        .tool-card.coming .tool-card-name { color: #94a3b8; }
+        .tool-status {
+            font-size: 0.7rem;
+            font-weight: 700;
+            padding: 2px 8px;
+            border-radius: 8px;
+        }
+        .tool-status.live    { background: #dcfce7; color: #166534; }
+        .tool-status.soon    { background: #f1f5f9; color: #64748b; border: 1px solid #e2e8f0; }
+        .tool-status.planned { background: #fef3c7; color: #92400e; }
+
+        .tool-card-desc {
+            font-size: 0.835rem;
+            color: #64748b;
+            line-height: 1.6;
+        }
+        .tool-card.coming .tool-card-desc { color: #94a3b8; }
+
+        .tool-card-tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 5px;
+        }
+        .tool-tag {
+            font-size: 0.7rem;
+            background: #f1f5f9;
+            color: #475569;
+            padding: 2px 8px;
+            border-radius: 6px;
+        }
+        .tool-card.active .tool-tag { background: #eff6ff; color: #1d4ed8; }
+        .tool-card.coming .tool-tag { background: #f1f5f9; color: #94a3b8; }
+
+        .tool-card-footer {
+            margin-top: auto;
+            padding-top: 12px;
+            border-top: 1px solid #f1f5f9;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .btn-go {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            background: #1d4ed8;
+            color: #fff;
+            text-decoration: none;
+            font-size: 0.82rem;
+            font-weight: 600;
+            padding: 7px 16px;
+            border-radius: 7px;
+            transition: background 0.15s;
+        }
+        .btn-go:hover { background: #1e40af; }
+        .btn-go-disabled {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            background: #f1f5f9;
+            color: #94a3b8;
+            font-size: 0.82rem;
+            font-weight: 600;
+            padding: 7px 16px;
+            border-radius: 7px;
+            cursor: not-allowed;
+        }
+        .tool-card-since {
+            margin-left: auto;
+            font-size: 0.72rem;
+            color: #94a3b8;
+        }
+
+        /* 공지 목록 */
+        .notices-card {
+            background: #fff;
+            border-radius: 12px;
+            border: 1px solid #e2e8f0;
+            overflow: hidden;
+        }
+        .notice-item {
+            border-bottom: 1px solid #f1f5f9;
+            font-size: 0.875rem;
+        }
+        .notice-item:last-child { border-bottom: none; }
+        .notice-header {
+            padding: 14px 20px;
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            cursor: pointer;
+            user-select: none;
+            transition: background 0.15s;
+        }
+        .notice-header:hover { background: #f8fafc; }
+        .notice-item.no-body .notice-header { cursor: default; }
+        .notice-item.no-body .notice-header:hover { background: transparent; }
+        .notice-type {
+            font-size: 0.68rem;
+            font-weight: 700;
+            padding: 2px 7px;
+            border-radius: 6px;
+            white-space: nowrap;
+            flex-shrink: 0;
+        }
+        .notice-type.update  { background: #dbeafe; color: #1e40af; }
+        .notice-type.guide   { background: #dcfce7; color: #166534; }
+        .notice-type.plan    { background: #fef3c7; color: #92400e; }
+        .notice-title { flex: 1; color: #374151; }
+        .notice-date { font-size: 0.75rem; color: #94a3b8; white-space: nowrap; flex-shrink: 0; }
+        .notice-chevron {
+            flex-shrink: 0;
+            color: #94a3b8;
+            transition: transform 0.25s ease;
+            margin-left: 4px;
+        }
+        .notice-item.open .notice-chevron { transform: rotate(180deg); }
+        .notice-body {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease, padding 0.3s ease;
+            padding: 0 20px;
+            font-size: 0.845rem;
+            color: #475569;
+            line-height: 1.7;
+            border-top: 0px solid #f1f5f9;
+        }
+        .notice-item.open .notice-body {
+            max-height: 200px;
+            padding: 12px 20px 16px;
+            border-top: 1px solid #f1f5f9;
+        }
+
+        @media (max-width: 1100px) {
+            .tools-grid { grid-template-columns: repeat(2, 1fr); }
+            .stats-row  { grid-template-columns: repeat(2, 1fr); }
+        }
+        @media (max-width: 768px) {
+            .main-wrap { margin-left: 0; }
+            .tools-grid { grid-template-columns: 1fr; }
+            .stats-row  { grid-template-columns: repeat(2, 1fr); }
+        }
+    </style>
+</head>
+<body>
+
+<!-- ── 사이드바 ── -->
+<th:block th:replace="~{fragments/sidebar :: sidebarFull('/')}"></th:block>
+
+<!-- ── 메인 콘텐츠 ── -->
+<div class="main-wrap">
+
+    <!-- 상단 헤더 -->
+    <th:block th:replace="~{fragments/sidebar :: topbarFull('대시보드', '')}"></th:block>
+
+    <!-- 콘텐츠 -->
+    <main class="content">
+
+        <!-- ── 공지 배너 (pinned 공지) ── -->
+        <div class="notice-banner" th:if="${pinnedNotice != null}">
+            <div class="notice-icon">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#93c5fd" stroke-width="2">
+                    <path d="M18 8h1a4 4 0 0 1 0 8h-1"/>
+                    <path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z"/>
+                    <line x1="6" y1="1" x2="6" y2="4"/><line x1="10" y1="1" x2="10" y2="4"/>
+                    <line x1="14" y1="1" x2="14" y2="4"/>
+                </svg>
+            </div>
+            <div>
+                <h2 th:text="${pinnedNotice.title}">공지 제목</h2>
+                <p th:text="${pinnedNotice.body}">공지 본문</p>
+            </div>
+            <span class="notice-date" th:text="${pinnedNotice.displayDate}">날짜</span>
+        </div>
+
+        <!-- ── 통계 ── -->
+        <div class="stats-row">
+            <div class="stat-card">
+                <div class="stat-icon blue">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#3b82f6" stroke-width="2">
+                        <rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/>
+                        <rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/>
+                    </svg>
+                </div>
+                <div>
+                    <div class="stat-value" th:text="${activeCount}">0</div>
+                    <div class="stat-label">운영 중인 도구</div>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon green">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#22c55e" stroke-width="2">
+                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                        <polyline points="14 2 14 8 20 8"/>
+                    </svg>
+                </div>
+                <div>
+                    <div class="stat-value">5</div>
+                    <div class="stat-label">지원 파일 형식</div>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon purple">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#a855f7" stroke-width="2">
+                        <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
+                    </svg>
+                </div>
+                <div>
+                    <div class="stat-value">26</div>
+                    <div class="stat-label">적용 판정 규칙</div>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon amber">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" stroke-width="2">
+                        <circle cx="12" cy="12" r="10"/>
+                        <polyline points="12 6 12 12 16 14"/>
+                    </svg>
+                </div>
+                <div>
+                    <div class="stat-value" th:text="${comingSoonCount}">0</div>
+                    <div class="stat-label">준비 중인 도구</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ── 도구 목록 ── -->
+        <div class="section-header">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#64748b" stroke-width="2">
+                <rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/>
+                <rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/>
+            </svg>
+            <h2>도구 목록</h2>
+            <span class="count-badge" th:text="'전체 ' + ${tools.size()}">전체 0</span>
+        </div>
+
+        <div class="tools-grid">
+            <th:block th:each="tool : ${tools}">
+
+                <!-- ✅ 운영 중 카드 -->
+                <div th:if="${tool.status == 'ACTIVE'}"
+                     class="tool-card active"
+                     th:attr="onclick='location.href=\'' + ${tool.href} + '\''">
+                    <div class="tool-card-header">
+                        <div class="tool-card-icon blue">
+                            <!-- id=1: 요구사항 비교 아이콘 -->
+                            <svg th:if="${tool.id == 1}" width="22" height="22" viewBox="0 0 24 24"
+                                 fill="none" stroke="#3b82f6" stroke-width="2">
+                                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                                <polyline points="14 2 14 8 20 8"/>
+                                <line x1="16" y1="13" x2="8" y2="13"/>
+                                <line x1="16" y1="17" x2="8" y2="17"/>
+                            </svg>
+                            <!-- id=2: 하드코딩 탐지 아이콘 -->
+                            <svg th:if="${tool.id == 2}" width="22" height="22" viewBox="0 0 24 24"
+                                 fill="none" stroke="#3b82f6" stroke-width="2">
+                                <circle cx="11" cy="11" r="8"/>
+                                <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+                            </svg>
+                        </div>
+                        <div class="tool-card-meta">
+                            <div class="tool-card-name" th:text="${tool.name}">도구명</div>
+                            <span class="tool-status"
+                                  th:classappend="${tool.statusClass}"
+                                  th:text="${tool.statusLabel}">상태</span>
+                        </div>
+                    </div>
+                    <p class="tool-card-desc" th:text="${tool.description}">설명</p>
+                    <div class="tool-card-tags">
+                        <span th:each="tag : ${tool.tagList}"
+                              class="tool-tag"
+                              th:text="${tag}">태그</span>
+                    </div>
+                    <div class="tool-card-footer">
+                        <a th:href="${tool.href}" class="btn-go" onclick="event.stopPropagation()">
+                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none"
+                                 stroke="currentColor" stroke-width="2.5">
+                                <line x1="5" y1="12" x2="19" y2="12"/>
+                                <polyline points="12 5 19 12 12 19"/>
+                            </svg>
+                            <span th:text="${tool.buttonLabel}">도구 열기</span>
+                        </a>
+                        <span class="tool-card-since"
+                              th:text="${tool.since != null} ? ${tool.since} + '~' : ''"></span>
+                    </div>
+                </div>
+
+                <!-- 🔜 준비 중 카드 -->
+                <div th:if="${tool.status == 'COMING_SOON'}"
+                     class="tool-card coming">
+                    <div class="tool-card-header">
+                        <div class="tool-card-icon slate">
+                            <!-- id=3: SQL 아이콘 -->
+                            <svg th:if="${tool.id == 3}" width="22" height="22" viewBox="0 0 24 24"
+                                 fill="none" stroke="#94a3b8" stroke-width="2">
+                                <ellipse cx="12" cy="5" rx="9" ry="3"/>
+                                <path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/>
+                                <path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/>
+                            </svg>
+                            <!-- id=4: 네이밍 아이콘 -->
+                            <svg th:if="${tool.id == 4}" width="22" height="22" viewBox="0 0 24 24"
+                                 fill="none" stroke="#94a3b8" stroke-width="2">
+                                <polyline points="4 7 4 4 20 4 20 7"/>
+                                <line x1="9" y1="20" x2="15" y2="20"/>
+                                <line x1="12" y1="4" x2="12" y2="20"/>
+                            </svg>
+                            <!-- id=5: 서버 로그 아이콘 -->
+                            <svg th:if="${tool.id == 5}" width="22" height="22" viewBox="0 0 24 24"
+                                 fill="none" stroke="#94a3b8" stroke-width="2">
+                                <rect x="2" y="3" width="20" height="14" rx="2"/>
+                                <path d="M8 21h8M12 17v4"/>
+                                <path d="M7 8h.01M11 8h6M7 12h.01M11 12h6"/>
+                            </svg>
+                        </div>
+                        <div class="tool-card-meta">
+                            <div class="tool-card-name" th:text="${tool.name}">도구명</div>
+                            <span class="tool-status"
+                                  th:classappend="${tool.statusClass}"
+                                  th:text="${tool.statusLabel}">상태</span>
+                        </div>
+                    </div>
+                    <p class="tool-card-desc" th:text="${tool.description}">설명</p>
+                    <div class="tool-card-tags">
+                        <span th:each="tag : ${tool.tagList}"
+                              class="tool-tag"
+                              th:text="${tag}">태그</span>
+                    </div>
+                    <div class="tool-card-footer">
+                        <span class="btn-go-disabled">
+                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none"
+                                 stroke="currentColor" stroke-width="2.5">
+                                <circle cx="12" cy="12" r="10"/>
+                                <polyline points="12 6 12 12 16 14"/>
+                            </svg>
+                            <span th:text="${tool.buttonLabel}">개발 예정</span>
+                        </span>
+                    </div>
+                </div>
+
+            </th:block>
+        </div>
+
+        <!-- ── 공지 및 업데이트 목록 ── -->
+        <div class="section-header">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#64748b" stroke-width="2">
+                <path d="M18 8h1a4 4 0 0 1 0 8h-1"/>
+                <path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z"/>
+                <line x1="6" y1="1" x2="6" y2="4"/><line x1="10" y1="1" x2="10" y2="4"/>
+                <line x1="14" y1="1" x2="14" y2="4"/>
+            </svg>
+            <h2>공지 및 업데이트</h2>
+        </div>
+
+        <div class="notices-card">
+            <div th:each="notice : ${notices}"
+                 class="notice-item"
+                 th:classappend="${notice.body == null or notice.body.isBlank()} ? ' no-body'"
+                 th:attr="data-has-body=${notice.body != null and !notice.body.isBlank()}">
+                <div class="notice-header" onclick="toggleNotice(this)">
+                    <span class="notice-type"
+                          th:classappend="${notice.typeClass}"
+                          th:text="${notice.typeLabel}">타입</span>
+                    <span class="notice-title" th:text="${notice.title}">제목</span>
+                    <span class="notice-date" th:text="${notice.displayDate}">날짜</span>
+                    <!-- body 있는 항목에만 화살표 표시 -->
+                    <svg th:if="${notice.body != null and !notice.body.isBlank()}"
+                         class="notice-chevron"
+                         width="14" height="14" viewBox="0 0 24 24"
+                         fill="none" stroke="currentColor" stroke-width="2.5">
+                        <polyline points="6 9 12 15 18 9"/>
+                    </svg>
+                </div>
+                <div class="notice-body"
+                     th:if="${notice.body != null and !notice.body.isBlank()}"
+                     th:text="${notice.body}">세부 내용</div>
+            </div>
+        </div>
+
+    </main>
+</div>
+
+<script>
+    // 공지 아코디언 토글
+    function toggleNotice(header) {
+        const item = header.closest('.notice-item');
+        if (item.classList.contains('no-body')) return;
+        const isOpen = item.classList.contains('open');
+        // 다른 항목 닫기
+        document.querySelectorAll('.notice-item.open').forEach(el => el.classList.remove('open'));
+        if (!isOpen) item.classList.add('open');
+    }
+</script>
+
+</body>
+</html>

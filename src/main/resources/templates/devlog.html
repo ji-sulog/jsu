@@ -1,0 +1,415 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>개발자 로그 · JSU Portal</title>
+  <th:block th:replace="~{fragments/sidebar :: sidebarStyles}"></th:block>
+  <th:block th:replace="~{fragments/sidebar :: topbarStyles}"></th:block>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Segoe UI', 'Apple SD Gothic Neo', sans-serif; background: #f1f5f9; color: #1e293b; min-height: 100vh; }
+    .layout { display: flex; min-height: 100vh; }
+    .main   { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+    .page   { padding: 28px; flex: 1; overflow-y: auto; }
+
+    /* ── 페이지 헤더 ─────────────────────────────────────────── */
+    .page-header { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 24px; gap: 16px; }
+    .page-header-text h1 { font-size: 1.4rem; font-weight: 700; color: #0f172a; }
+    .page-header-text p  { color: #64748b; font-size: 0.875rem; margin-top: 4px; }
+
+    /* ── 관리자 버튼 영역 ─────────────────────────────────────── */
+    .admin-bar { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+    .btn-primary {
+      display: inline-flex; align-items: center; gap: 6px;
+      background: #1d4ed8; color: #fff; border: none;
+      border-radius: 8px; padding: 8px 16px; font-size: 0.85rem;
+      font-weight: 600; cursor: pointer; transition: background .15s;
+    }
+    .btn-primary:hover { background: #1e40af; }
+    .btn-secondary {
+      background: #fff; color: #475569; border: 1px solid #e2e8f0;
+      border-radius: 8px; padding: 8px 14px; font-size: 0.85rem;
+      cursor: pointer; transition: background .15s;
+    }
+    .btn-secondary:hover { background: #f8fafc; }
+    .btn-danger {
+      background: #fff; color: #ef4444; border: 1px solid #fecaca;
+      border-radius: 8px; padding: 8px 14px; font-size: 0.85rem;
+      cursor: pointer; transition: background .15s;
+    }
+    .btn-danger:hover { background: #fef2f2; }
+    .admin-pw-input {
+      border: 1px solid #e2e8f0; border-radius: 8px;
+      padding: 8px 12px; font-size: 0.85rem; outline: none;
+      transition: border-color .15s; width: 160px;
+    }
+    .admin-pw-input:focus { border-color: #93c5fd; }
+    .admin-status {
+      font-size: 0.78rem; padding: 4px 10px; border-radius: 20px;
+    }
+    .admin-status.on  { background: #d1fae5; color: #065f46; }
+    .admin-status.off { background: #f1f5f9; color: #94a3b8; }
+
+    /* ── 목록 ───────────────────────────────────────────────── */
+    .log-list { display: flex; flex-direction: column; gap: 12px; }
+    .log-card {
+      background: #fff; border-radius: 12px;
+      border: 1px solid #e2e8f0;
+      padding: 18px 20px; cursor: pointer;
+      transition: box-shadow .15s, border-color .15s;
+    }
+    .log-card:hover { box-shadow: 0 4px 16px rgba(0,0,0,0.08); border-color: #bfdbfe; }
+    .log-card-header { display: flex; align-items: flex-start; gap: 10px; margin-bottom: 8px; }
+    .log-card-title  { flex: 1; font-size: 0.95rem; font-weight: 700; color: #1e293b; }
+    .log-card-date   { font-size: 0.75rem; color: #94a3b8; flex-shrink: 0; }
+    .tag-list { display: flex; flex-wrap: wrap; gap: 6px; }
+    .tag {
+      font-size: 0.72rem; font-weight: 600; padding: 3px 9px;
+      border-radius: 20px; background: #eff6ff; color: #1d4ed8;
+    }
+
+    /* ── 빈 상태 ─────────────────────────────────────────────── */
+    .empty-state {
+      text-align: center; padding: 80px 20px; color: #94a3b8;
+    }
+    .empty-state .icon { font-size: 2.5rem; margin-bottom: 12px; }
+    .empty-state p { font-size: 0.875rem; }
+
+    /* ── 모달 공통 ───────────────────────────────────────────── */
+    .modal-overlay {
+      display: none; position: fixed; inset: 0; z-index: 1000;
+      background: rgba(0,0,0,0.45); align-items: center; justify-content: center;
+    }
+    .modal-overlay.open { display: flex; }
+    .modal {
+      background: #fff; border-radius: 16px;
+      width: 600px; max-width: 95vw; max-height: 90vh;
+      display: flex; flex-direction: column;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.2);
+    }
+    .modal-header {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 18px 22px; border-bottom: 1px solid #f1f5f9;
+    }
+    .modal-title { font-size: 1rem; font-weight: 700; color: #1e293b; }
+    .modal-close {
+      background: none; border: none; cursor: pointer;
+      font-size: 1.4rem; color: #94a3b8; line-height: 1; padding: 0 4px;
+    }
+    .modal-close:hover { color: #475569; }
+    .modal-body { padding: 20px 22px; overflow-y: auto; flex: 1; }
+    .modal-footer {
+      padding: 14px 22px; border-top: 1px solid #f1f5f9;
+      display: flex; justify-content: flex-end; gap: 8px;
+    }
+
+    /* ── 폼 ─────────────────────────────────────────────────── */
+    .form-group { margin-bottom: 16px; }
+    .form-label { font-size: 0.8rem; font-weight: 600; color: #475569; margin-bottom: 6px; display: block; }
+    .form-input {
+      width: 100%; border: 1px solid #e2e8f0; border-radius: 8px;
+      padding: 9px 12px; font-size: 0.875rem; outline: none;
+      transition: border-color .15s;
+    }
+    .form-input:focus { border-color: #93c5fd; }
+    .form-textarea {
+      width: 100%; border: 1px solid #e2e8f0; border-radius: 8px;
+      padding: 9px 12px; font-size: 0.875rem; outline: none;
+      resize: vertical; min-height: 200px; transition: border-color .15s;
+      font-family: inherit; line-height: 1.6;
+    }
+    .form-textarea:focus { border-color: #93c5fd; }
+    .form-hint { font-size: 0.74rem; color: #94a3b8; margin-top: 4px; }
+    .form-err  { font-size: 0.78rem; color: #ef4444; margin-top: 6px; display: none; }
+
+    /* ── 상세 모달 ───────────────────────────────────────────── */
+    .detail-meta { font-size: 0.78rem; color: #94a3b8; margin-bottom: 14px; }
+    .detail-content {
+      font-size: 0.875rem; color: #334155; line-height: 1.75;
+      white-space: pre-wrap; word-break: break-all;
+      background: #f8fafc; border-radius: 8px; padding: 14px 16px;
+      margin-bottom: 16px;
+    }
+
+    @media (max-width: 900px) { .sidebar { display: none; } }
+  </style>
+</head>
+<body>
+<div class="layout">
+
+  <th:block th:replace="~{fragments/sidebar :: sidebarFull('/devlog')}"></th:block>
+
+  <div class="main">
+    <th:block th:replace="~{fragments/sidebar :: topbarFull('개발자 로그', '')}"></th:block>
+
+    <div class="page">
+
+      <!-- 페이지 헤더 -->
+      <div class="page-header">
+        <div class="page-header-text">
+          <h1>🛠️ 개발자 로그</h1>
+          <p>트러블슈팅, 의사결정, 기술 메모를 기록합니다. 관리자만 작성/수정/삭제 가능합니다.</p>
+        </div>
+        <div class="admin-bar" id="adminBar">
+          <!-- 비로그인 상태 -->
+          <div id="adminLoginArea" style="display:flex; align-items:center; gap:8px;">
+            <input class="admin-pw-input" type="password" id="adminPwInput"
+                   placeholder="관리자 비밀번호"
+                   onkeydown="if(event.key==='Enter') adminLogin()"/>
+            <button class="btn-secondary" onclick="adminLogin()">로그인</button>
+          </div>
+          <!-- 로그인 상태 -->
+          <div id="adminActiveArea" style="display:none; align-items:center; gap:8px;">
+            <span class="admin-status on">● 관리자</span>
+            <button class="btn-primary" onclick="openWriteModal()">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+              </svg>
+              새 로그
+            </button>
+            <button class="btn-secondary" onclick="adminLogout()">로그아웃</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- 로그 목록 -->
+      <div id="logList" class="log-list">
+        <div class="empty-state">
+          <div class="icon">🛠️</div>
+          <p>로딩 중...</p>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- ── 상세 모달 ──────────────────────────────────────────────── -->
+<div class="modal-overlay" id="detailModal">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-title" id="detailTitle"></span>
+      <button class="modal-close" onclick="closeModal('detailModal')">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="detail-meta" id="detailMeta"></div>
+      <div class="tag-list" id="detailTags" style="margin-bottom:14px;"></div>
+      <div class="detail-content" id="detailContent"></div>
+    </div>
+    <div class="modal-footer" id="detailFooter">
+      <button class="btn-secondary" onclick="closeModal('detailModal')">닫기</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── 글쓰기/수정 모달 ────────────────────────────────────────── -->
+<div class="modal-overlay" id="writeModal">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-title" id="writeModalTitle">새 로그 작성</span>
+      <button class="modal-close" onclick="closeModal('writeModal')">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label class="form-label">제목</label>
+        <input class="form-input" type="text" id="writeTitle" placeholder="예: PostgreSQL Flyway 마이그레이션 이슈" maxlength="255"/>
+      </div>
+      <div class="form-group">
+        <label class="form-label">내용</label>
+        <textarea class="form-textarea" id="writeContent" placeholder="트러블슈팅 내용, 원인, 해결 방법 등을 자유롭게 작성하세요."></textarea>
+      </div>
+      <div class="form-group">
+        <label class="form-label">태그</label>
+        <input class="form-input" type="text" id="writeTags" placeholder="예: Spring, DB, Flyway (쉼표로 구분)"/>
+        <div class="form-hint">쉼표로 구분해서 입력하세요.</div>
+      </div>
+      <div class="form-err" id="writeErr"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-secondary" onclick="closeModal('writeModal')">취소</button>
+      <button class="btn-primary" id="writeSubmitBtn" onclick="submitWrite()">등록하기</button>
+    </div>
+  </div>
+</div>
+
+<script>
+(function () {
+  var _adminPw    = null;
+  var _editingId  = null;   // 수정 중인 로그 ID
+
+  /* ── 관리자 로그인 ───────────────────────────────────────── */
+  window.adminLogin = function () {
+    var pw = document.getElementById('adminPwInput').value.trim();
+    if (!pw) return;
+    // 목록 API에 admin 헤더로 검증
+    fetch('/api/devlog', { headers: { 'X-Admin-Password': pw } })
+    .then(function(r) {
+      if (r.status === 403) { alert('비밀번호가 틀렸습니다.'); return; }
+      _adminPw = pw;
+      sessionStorage.setItem('devlogAdmin', pw);
+      setAdminUI(true);
+    });
+  };
+
+  window.adminLogout = function () {
+    _adminPw = null;
+    sessionStorage.removeItem('devlogAdmin');
+    setAdminUI(false);
+  };
+
+  function setAdminUI(on) {
+    document.getElementById('adminLoginArea').style.display  = on ? 'none'  : 'flex';
+    document.getElementById('adminActiveArea').style.display = on ? 'flex'  : 'none';
+    loadList();
+  }
+
+  /* ── 목록 로드 ───────────────────────────────────────────── */
+  function loadList() {
+    fetch('/api/devlog')
+    .then(function(r) { return r.json(); })
+    .then(function(logs) {
+      var el = document.getElementById('logList');
+      if (!logs.length) {
+        el.innerHTML = '<div class="empty-state"><div class="icon">🛠️</div><p>아직 작성된 로그가 없습니다.</p></div>';
+        return;
+      }
+      el.innerHTML = '';
+      logs.forEach(function(log) {
+        var card = document.createElement('div');
+        card.className = 'log-card';
+        var tagsHtml = (log.tags || []).map(function(t) {
+          return '<span class="tag">' + esc(t) + '</span>';
+        }).join('');
+        card.innerHTML =
+          '<div class="log-card-header">' +
+            '<span class="log-card-title">' + esc(log.title) + '</span>' +
+            '<span class="log-card-date">' + esc(log.date) + '</span>' +
+          '</div>' +
+          (tagsHtml ? '<div class="tag-list">' + tagsHtml + '</div>' : '');
+        card.addEventListener('click', function() { openDetail(log.id); });
+        el.appendChild(card);
+      });
+    });
+  }
+
+  /* ── 상세 모달 ───────────────────────────────────────────── */
+  function openDetail(id) {
+    fetch('/api/devlog/' + id)
+    .then(function(r) { return r.json(); })
+    .then(function(d) {
+      document.getElementById('detailTitle').textContent   = d.title;
+      document.getElementById('detailMeta').textContent    = '작성: ' + d.createdAt + (d.updatedAt !== d.createdAt ? '  ·  수정: ' + d.updatedAt : '');
+      document.getElementById('detailContent').textContent = d.content;
+
+      var tagsEl = document.getElementById('detailTags');
+      tagsEl.innerHTML = (d.tags || []).map(function(t) {
+        return '<span class="tag">' + esc(t) + '</span>';
+      }).join('');
+
+      var footer = document.getElementById('detailFooter');
+      if (_adminPw) {
+        footer.innerHTML =
+          '<button class="btn-danger"    onclick="deleteLog(' + d.id + ')">삭제</button>' +
+          '<button class="btn-secondary" onclick="openEditModal(' + d.id + ')">수정</button>' +
+          '<button class="btn-secondary" onclick="closeModal(\'detailModal\')">닫기</button>';
+      } else {
+        footer.innerHTML = '<button class="btn-secondary" onclick="closeModal(\'detailModal\')">닫기</button>';
+      }
+
+      openModal('detailModal');
+    });
+  }
+
+  /* ── 글쓰기 모달 ─────────────────────────────────────────── */
+  window.openWriteModal = function () {
+    _editingId = null;
+    document.getElementById('writeModalTitle').textContent = '새 로그 작성';
+    document.getElementById('writeTitle').value   = '';
+    document.getElementById('writeContent').value = '';
+    document.getElementById('writeTags').value    = '';
+    document.getElementById('writeErr').style.display = 'none';
+    document.getElementById('writeSubmitBtn').textContent = '등록하기';
+    openModal('writeModal');
+  };
+
+  window.openEditModal = function (id) {
+    fetch('/api/devlog/' + id)
+    .then(function(r) { return r.json(); })
+    .then(function(d) {
+      _editingId = id;
+      document.getElementById('writeModalTitle').textContent = '로그 수정';
+      document.getElementById('writeTitle').value   = d.title;
+      document.getElementById('writeContent').value = d.content;
+      document.getElementById('writeTags').value    = (d.tags || []).join(', ');
+      document.getElementById('writeErr').style.display = 'none';
+      document.getElementById('writeSubmitBtn').textContent = '수정하기';
+      closeModal('detailModal');
+      openModal('writeModal');
+    });
+  };
+
+  window.submitWrite = function () {
+    var title   = document.getElementById('writeTitle').value.trim();
+    var content = document.getElementById('writeContent').value.trim();
+    var tags    = document.getElementById('writeTags').value.trim();
+    var err     = document.getElementById('writeErr');
+
+    if (!title)   { err.textContent = '제목을 입력하세요.'; err.style.display = 'block'; return; }
+    if (!content) { err.textContent = '내용을 입력하세요.'; err.style.display = 'block'; return; }
+    err.style.display = 'none';
+
+    var url    = _editingId ? '/api/devlog/' + _editingId : '/api/devlog';
+    var method = _editingId ? 'PUT' : 'POST';
+
+    fetch(url, {
+      method: method,
+      headers: { 'Content-Type': 'application/json', 'X-Admin-Password': _adminPw },
+      body: JSON.stringify({ title: title, content: content, tags: tags })
+    })
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+      if (data.error) { err.textContent = data.error; err.style.display = 'block'; return; }
+      closeModal('writeModal');
+      loadList();
+    });
+  };
+
+  /* ── 삭제 ────────────────────────────────────────────────── */
+  window.deleteLog = function (id) {
+    if (!confirm('이 로그를 삭제하시겠습니까?')) return;
+    fetch('/api/devlog/' + id, {
+      method: 'DELETE',
+      headers: { 'X-Admin-Password': _adminPw }
+    })
+    .then(function() {
+      closeModal('detailModal');
+      loadList();
+    });
+  };
+
+  /* ── 모달 헬퍼 ───────────────────────────────────────────── */
+  window.openModal  = function (id) { document.getElementById(id).classList.add('open'); };
+  window.closeModal = function (id) { document.getElementById(id).classList.remove('open'); };
+
+  // 오버레이 클릭 시 닫기
+  document.querySelectorAll('.modal-overlay').forEach(function(el) {
+    el.addEventListener('click', function(e) {
+      if (e.target === el) el.classList.remove('open');
+    });
+  });
+
+  /* ── XSS 방지 ────────────────────────────────────────────── */
+  function esc(s) {
+    return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  }
+
+  /* ── 세션 복원 ───────────────────────────────────────────── */
+  var saved = sessionStorage.getItem('devlogAdmin');
+  if (saved) { _adminPw = saved; setAdminUI(true); } else { loadList(); }
+
+}());
+</script>
+
+</body>
+</html>

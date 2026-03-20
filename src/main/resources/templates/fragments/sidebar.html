@@ -1,0 +1,900 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+
+<!--
+  ── Fragment: sidebarStyles ──────────────────────────────────────
+  모든 페이지 공통 사이드바 CSS.
+  각 페이지 <head> 안에 삽입:
+    <th:block th:replace="~{fragments/sidebar :: sidebarStyles}"></th:block>
+-->
+<th:block th:fragment="sidebarStyles">
+<style>
+  /* ── Sidebar ──────────────────────────────────────────────── */
+  .sidebar {
+    width: 240px; flex-shrink: 0;
+    background: #0f172a; color: #94a3b8;
+    display: flex; flex-direction: column;
+    position: sticky; top: 0; height: 100vh; overflow-y: auto;
+    z-index: 100;
+  }
+
+  /* ── Logo ─────────────────────────────────────────────────── */
+  .sidebar-logo {
+    display: block; padding: 24px 20px 20px;
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+    text-decoration: none; transition: opacity .15s;
+  }
+  .sidebar-logo:hover { opacity: .8; }
+  .sidebar-logo .logo-icon { display: flex; align-items: center; gap: 10px; margin-bottom: 4px; }
+  .sidebar-logo .logo-text { font-size: 1.1rem; font-weight: 700; color: #f8fafc; letter-spacing: -0.02em; }
+  .sidebar-logo .logo-sub  { font-size: 0.72rem; color: #475569; padding-left: 34px; }
+
+  /* ── Nav ──────────────────────────────────────────────────── */
+  .sidebar-nav { padding: 16px 12px; flex: 1; }
+
+  .nav-group-label {
+    font-size: 0.67rem; font-weight: 600; color: #334155;
+    text-transform: uppercase; letter-spacing: 0.1em;
+    padding: 8px 8px 4px; margin-top: 8px;
+  }
+
+  .nav-item {
+    display: flex; align-items: center; gap: 10px;
+    padding: 9px 12px; border-radius: 8px;
+    color: #64748b; font-size: 0.875rem; cursor: pointer;
+    transition: all 0.15s; text-decoration: none; margin-bottom: 2px;
+  }
+  .nav-item:hover { background: rgba(255,255,255,0.06); color: #cbd5e1; }
+  .nav-item.active { background: #1d4ed8; color: #eff6ff; font-weight: 600; }
+  .nav-item.active svg { stroke: #93c5fd; }
+  .nav-item svg { flex-shrink: 0; }
+  .nav-item .badge-coming {
+    margin-left: auto; font-size: 0.62rem;
+    background: #1e293b; color: #475569;
+    border: 1px solid #334155; padding: 1px 6px; border-radius: 8px;
+  }
+
+  /* ── Disabled (준비중) ────────────────────────────────────── */
+  .nav-item--disabled { cursor: default; opacity: .5; }
+  .nav-item--disabled:hover { background: none !important; color: #64748b !important; }
+
+  /* ── Footer ───────────────────────────────────────────────── */
+  .sidebar-footer {
+    padding: 14px 20px;
+    border-top: 1px solid rgba(255,255,255,0.06);
+    font-size: 0.75rem; color: #334155;
+    display: flex; align-items: center; justify-content: space-between; gap: 8px;
+  }
+  .sidebar-footer-text { line-height: 1.5; }
+  .sidebar-footer strong { color: #475569; }
+  .devlog-pill {
+    display: inline-flex; align-items: center; gap: 5px;
+    padding: 5px 10px; border-radius: 20px;
+    background: rgba(255,255,255,0.07);
+    border: 1px solid rgba(255,255,255,0.12);
+    color: #94a3b8; font-size: 0.72rem; font-weight: 600;
+    cursor: pointer; text-decoration: none;
+    transition: background .15s, color .15s, border-color .15s, transform .1s;
+    white-space: nowrap; flex-shrink: 0;
+  }
+  .devlog-pill:hover {
+    background: rgba(255,255,255,0.14);
+    border-color: rgba(255,255,255,0.25);
+    color: #e2e8f0; transform: translateY(-1px);
+  }
+  .devlog-pill:active { transform: translateY(0); }
+
+  /* ── Responsive ───────────────────────────────────────────── */
+  @media (max-width: 900px) { .sidebar { display: none; } }
+</style>
+</th:block>
+
+</head>
+<body>
+
+<!--
+  ── Fragment: sidebarFull(currentPath) ──────────────────────────
+  완전한 <aside> 사이드바 (로고 + 메뉴 + 푸터).
+  CSS는 sidebarStyles로 별도 삽입 필요.
+  사용법: <th:block th:replace="~{fragments/sidebar :: sidebarFull('/scan')}"></th:block>
+-->
+<aside th:fragment="sidebarFull(currentPath)" class="sidebar">
+
+  <!-- 로고 / 홈 링크 -->
+  <a class="sidebar-logo" href="/">
+    <div class="logo-icon">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#60a5fa" stroke-width="2">
+        <rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/>
+        <rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/>
+      </svg>
+      <span class="logo-text">JSU Portal</span>
+    </div>
+    <div class="logo-sub">업무 지원 도구 모음</div>
+  </a>
+
+  <nav class="sidebar-nav">
+    <div class="nav-group-label">메뉴</div>
+
+    <!-- 대시보드 (홈) -->
+    <a href="/" class="nav-item" th:classappend="${currentPath == '/'} ? ' active'">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/>
+        <rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/>
+      </svg>
+      대시보드
+    </a>
+
+    <!-- 운영 중 도구 -->
+    <th:block th:each="tool : ${sidebarTools}" th:if="${tool.status == 'ACTIVE'}">
+      <a class="nav-item"
+         th:classappend="${currentPath == tool.href} ? ' active'"
+         th:href="${tool.href}">
+
+        <svg th:if="${tool.id == 1}" width="16" height="16" viewBox="0 0 24 24"
+             fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+          <polyline points="14 2 14 8 20 8"/>
+          <line x1="16" y1="13" x2="8" y2="13"/>
+          <line x1="16" y1="17" x2="8" y2="17"/>
+        </svg>
+
+        <svg th:if="${tool.id == 2}" width="16" height="16" viewBox="0 0 24 24"
+             fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="11" cy="11" r="8"/>
+          <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+        </svg>
+
+        <svg th:if="${tool.id == 3}" width="16" height="16" viewBox="0 0 24 24"
+             fill="none" stroke="currentColor" stroke-width="2">
+          <ellipse cx="12" cy="5" rx="9" ry="3"/>
+          <path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/>
+          <path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/>
+        </svg>
+
+        <span th:text="${tool.name}"></span>
+      </a>
+    </th:block>
+
+    <!-- 준비 중 구분선 -->
+    <div class="nav-group-label" style="margin-top:16px;">준비 중</div>
+
+    <!-- 준비 중 도구: 클릭 불가 -->
+    <th:block th:each="tool : ${sidebarTools}" th:if="${tool.status == 'COMING_SOON'}">
+      <span class="nav-item nav-item--disabled">
+
+        <svg th:if="${tool.id == 3}" width="16" height="16" viewBox="0 0 24 24"
+             fill="none" stroke="currentColor" stroke-width="2">
+          <ellipse cx="12" cy="5" rx="9" ry="3"/>
+          <path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/>
+          <path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/>
+        </svg>
+
+        <svg th:if="${tool.id == 4}" width="16" height="16" viewBox="0 0 24 24"
+             fill="none" stroke="currentColor" stroke-width="2">
+          <polyline points="4 7 4 4 20 4 20 7"/>
+          <line x1="9" y1="20" x2="15" y2="20"/>
+          <line x1="12" y1="4" x2="12" y2="20"/>
+        </svg>
+
+        <svg th:if="${tool.id == 5}" width="16" height="16" viewBox="0 0 24 24"
+             fill="none" stroke="currentColor" stroke-width="2">
+          <rect x="2" y="3" width="20" height="14" rx="2"/>
+          <path d="M8 21h8M12 17v4"/>
+        </svg>
+
+        <span th:text="${tool.name}"></span>
+        <span class="badge-coming">준비 중</span>
+      </span>
+    </th:block>
+  </nav>
+
+  <!-- 푸터 -->
+  <div class="sidebar-footer">
+    <div class="sidebar-footer-text">
+      <strong>JSU Portal</strong> v0.1.0<br>내부 업무 전용
+    </div>
+    <a href="/devlog" class="devlog-pill">
+      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+        <path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/>
+      </svg>
+      Dev Log
+    </a>
+  </div>
+
+
+  <!-- ═══════════════════════════════════════════════════════════
+       Q&A 플로팅 위젯 (position:fixed → aside 안에 있어도 뷰포트 기준 고정)
+       ═══════════════════════════════════════════════════════════ -->
+<style>
+  /* ── FAB 버튼 ────────────────────────────────────────────── */
+  .chat-fab {
+    position: fixed; bottom: 24px; right: 24px; z-index: 999;
+    width: 52px; height: 52px; border-radius: 50%;
+    background: #1d4ed8; color: #fff; border: none; cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    box-shadow: 0 4px 20px rgba(29,78,216,0.4);
+    transition: background .15s, transform .15s;
+  }
+  .chat-fab:hover { background: #1e40af; transform: scale(1.07); }
+
+  /* ── 패널 ────────────────────────────────────────────────── */
+  .chat-panel {
+    position: fixed; bottom: 88px; right: 24px;
+    width: 340px; height: 500px;
+    background: #fff; border-radius: 16px;
+    box-shadow: 0 12px 48px rgba(0,0,0,0.16);
+    display: flex; flex-direction: column;
+    z-index: 998;
+    transform: translateY(16px); opacity: 0; pointer-events: none;
+    transition: transform .25s ease, opacity .25s ease;
+    font-family: 'Segoe UI', 'Apple SD Gothic Neo', sans-serif;
+    overflow: hidden;
+  }
+  .chat-panel.open { transform: translateY(0); opacity: 1; pointer-events: all; }
+
+  /* ── 패널 헤더 ───────────────────────────────────────────── */
+  .chat-panel-header {
+    display: flex; align-items: center; gap: 8px;
+    padding: 13px 16px; border-bottom: 1px solid #f1f5f9;
+    flex-shrink: 0;
+  }
+  .chat-panel-title { flex: 1; font-size: 0.88rem; font-weight: 700; color: #1e293b; }
+  .chat-panel-close {
+    background: none; border: none; cursor: pointer;
+    color: #94a3b8; font-size: 1.3rem; line-height: 1; padding: 0 4px;
+  }
+  .chat-panel-close:hover { color: #475569; }
+
+  /* ── 공통 뷰 래퍼 ───────────────────────────────────────── */
+  .qna-view { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+
+  /* ── 목록 화면 ───────────────────────────────────────────── */
+  .qna-list-bar {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 8px 14px; border-bottom: 1px solid #f8fafc; flex-shrink: 0;
+  }
+  .qna-list-bar-label { font-size: 0.72rem; color: #94a3b8; font-weight: 600; text-transform: uppercase; }
+  .qna-write-btn {
+    background: #1d4ed8; color: #fff; border: none; border-radius: 8px;
+    padding: 5px 10px; font-size: 0.75rem; font-weight: 600; cursor: pointer;
+    display: flex; align-items: center; gap: 4px;
+  }
+  .qna-write-btn:hover { background: #1e40af; }
+  .qna-list-scroll { flex: 1; overflow-y: auto; }
+  .qna-item {
+    padding: 11px 14px; border-bottom: 1px solid #f8fafc;
+    cursor: pointer; transition: background .1s;
+  }
+  .qna-item:hover { background: #f8fafc; }
+  .qna-item.private { opacity: 0.45; }
+  .qna-item.private:hover { background: #f8fafc; opacity: 0.6; }
+  .qna-item.private .qna-item-title { color: #94a3b8; font-style: italic; }
+  .qna-item-row1 { display: flex; align-items: flex-start; gap: 6px; margin-bottom: 4px; }
+  .qna-item-title {
+    flex: 1; font-size: 0.83rem; font-weight: 600; color: #1e293b;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .qna-badge {
+    flex-shrink: 0; font-size: 0.66rem; font-weight: 700; padding: 2px 7px;
+    border-radius: 20px;
+  }
+  .qna-badge.waiting  { background: #fef3c7; color: #92400e; }
+  .qna-badge.answered { background: #d1fae5; color: #065f46; }
+  .qna-item-meta { font-size: 0.7rem; color: #cbd5e1; }
+  .qna-lock { font-size: 0.72rem; color: #94a3b8; }
+  .qna-empty {
+    flex: 1; display: flex; flex-direction: column; align-items: center;
+    justify-content: center; gap: 8px; padding: 30px;
+    font-size: 0.8rem; color: #cbd5e1; text-align: center;
+  }
+  .qna-admin-btn {
+    background: none; border: none; cursor: pointer;
+    font-size: 0.72rem; color: #94a3b8; padding: 8px 14px;
+    border-top: 1px solid #f8fafc; flex-shrink: 0;
+    width: 100%; text-align: left;
+  }
+  .qna-admin-btn:hover { color: #1d4ed8; }
+
+  /* ── 글쓰기 / 관리자 로그인 공통 폼 ─────────────────────── */
+  .qna-form {
+    flex: 1; display: flex; flex-direction: column;
+    padding: 14px; gap: 10px; overflow-y: auto;
+  }
+  .qna-form-label { font-size: 0.74rem; font-weight: 600; color: #475569; margin-bottom: 2px; }
+  .qna-input {
+    width: 100%; box-sizing: border-box;
+    border: 1px solid #e2e8f0; border-radius: 8px;
+    padding: 8px 10px; font-size: 0.82rem; color: #1e293b;
+    outline: none; transition: border-color .15s;
+  }
+  .qna-input:focus { border-color: #93c5fd; }
+  .qna-textarea {
+    width: 100%; box-sizing: border-box;
+    border: 1px solid #e2e8f0; border-radius: 8px;
+    padding: 8px 10px; font-size: 0.82rem; color: #1e293b;
+    resize: none; height: 90px; outline: none; transition: border-color .15s;
+  }
+  .qna-textarea:focus { border-color: #93c5fd; }
+  .qna-toggle-row { display: flex; align-items: center; gap: 8px; }
+  .qna-toggle-label { font-size: 0.8rem; color: #475569; }
+  .qna-toggle {
+    position: relative; width: 36px; height: 20px; flex-shrink: 0;
+  }
+  .qna-toggle input { opacity: 0; width: 0; height: 0; }
+  .qna-toggle-slider {
+    position: absolute; inset: 0; background: #e2e8f0; border-radius: 20px;
+    cursor: pointer; transition: background .2s;
+  }
+  .qna-toggle-slider:before {
+    content: ''; position: absolute;
+    width: 14px; height: 14px; left: 3px; top: 3px;
+    background: #fff; border-radius: 50%; transition: transform .2s;
+  }
+  .qna-toggle input:checked + .qna-toggle-slider { background: #f59e0b; }
+  .qna-toggle input:checked + .qna-toggle-slider:before { transform: translateX(16px); }
+  .qna-err { font-size: 0.74rem; color: #ef4444; display: none; }
+  .qna-form-footer { display: flex; gap: 8px; margin-top: auto; flex-shrink: 0; }
+  .qna-btn-primary {
+    flex: 1; background: #1d4ed8; color: #fff; border: none;
+    border-radius: 8px; padding: 9px; font-size: 0.82rem;
+    font-weight: 600; cursor: pointer;
+  }
+  .qna-btn-primary:hover { background: #1e40af; }
+  .qna-btn-cancel {
+    background: #f1f5f9; color: #64748b; border: none;
+    border-radius: 8px; padding: 9px 14px; font-size: 0.82rem;
+    cursor: pointer;
+  }
+  .qna-btn-cancel:hover { background: #e2e8f0; }
+
+  /* ── 상세 화면 ───────────────────────────────────────────── */
+  .qna-detail-header {
+    display: flex; align-items: center; gap: 8px;
+    padding: 10px 14px; border-bottom: 1px solid #f1f5f9; flex-shrink: 0;
+  }
+  .qna-back-btn {
+    background: none; border: none; cursor: pointer;
+    font-size: 0.8rem; color: #64748b; padding: 0;
+  }
+  .qna-back-btn:hover { color: #1d4ed8; }
+  .qna-detail-title {
+    flex: 1; font-size: 0.84rem; font-weight: 700; color: #1e293b;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .qna-detail-scroll { flex: 1; overflow-y: auto; padding: 14px; }
+  .qna-detail-meta { font-size: 0.72rem; color: #94a3b8; margin-bottom: 10px; }
+  .qna-detail-content {
+    font-size: 0.83rem; color: #334155; line-height: 1.6;
+    background: #f8fafc; border-radius: 8px; padding: 10px 12px;
+    margin-bottom: 14px; white-space: pre-wrap; word-break: break-all;
+  }
+  .qna-reply-section-label {
+    font-size: 0.72rem; font-weight: 700; color: #64748b;
+    text-transform: uppercase; letter-spacing: .04em; margin-bottom: 8px;
+  }
+  .qna-reply-item {
+    background: #eff6ff; border-radius: 8px; padding: 10px 12px;
+    margin-bottom: 8px;
+  }
+  .qna-reply-item p { font-size: 0.83rem; color: #1e293b; margin: 0 0 4px; white-space: pre-wrap; word-break: break-all; }
+  .qna-reply-item span { font-size: 0.7rem; color: #93c5fd; }
+  .qna-no-reply { font-size: 0.8rem; color: #cbd5e1; text-align: center; padding: 12px 0; }
+
+  /* 관리자 답변 입력 */
+  .qna-reply-input-area {
+    padding: 10px 14px; border-top: 1px solid #f1f5f9; flex-shrink: 0;
+    display: none; gap: 6px; align-items: flex-end;
+  }
+  .qna-reply-textarea {
+    flex: 1; border: 1px solid #e2e8f0; border-radius: 8px;
+    padding: 7px 10px; font-size: 0.8rem; resize: none; height: 54px;
+    outline: none;
+  }
+  .qna-reply-textarea:focus { border-color: #93c5fd; }
+  .qna-reply-send {
+    background: #1d4ed8; color: #fff; border: none; border-radius: 8px;
+    padding: 8px 10px; cursor: pointer; flex-shrink: 0;
+  }
+  .qna-reply-send:hover { background: #1e40af; }
+</style>
+
+<!-- ── FAB 버튼 ──────────────────────────────────────────── -->
+<button class="chat-fab" id="chatFab" onclick="qnaToggle()" title="문의하기">
+  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+    <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+  </svg>
+</button>
+
+<!-- ── Q&A 패널 ──────────────────────────────────────────── -->
+<div class="chat-panel" id="qnaPanel">
+
+  <!-- 헤더 -->
+  <div class="chat-panel-header">
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#1d4ed8" stroke-width="2">
+      <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+    </svg>
+    <span class="chat-panel-title" id="qnaPanelTitle">문의 게시판</span>
+    <button class="chat-panel-close" onclick="qnaToggle()">×</button>
+  </div>
+
+  <!-- ① 목록 화면 -->
+  <div id="qnaListView" class="qna-view">
+    <div class="qna-list-bar">
+      <span class="qna-list-bar-label" id="qnaListLabel">전체 문의</span>
+      <button class="qna-write-btn" onclick="qnaShowWrite()">
+        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        글쓰기
+      </button>
+    </div>
+    <div class="qna-list-scroll" id="qnaListScroll">
+      <div class="qna-empty" id="qnaListEmpty">
+        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#e2e8f0" stroke-width="1.5">
+          <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+        </svg>
+        <span>아직 문의 내역이 없습니다.</span>
+      </div>
+    </div>
+    <button class="qna-admin-btn" id="qnaAdminBtn" onclick="qnaShowAdminLogin()">🔑 관리자 로그인</button>
+  </div>
+
+  <!-- ② 글쓰기 화면 -->
+  <div id="qnaWriteView" class="qna-view" style="display:none;">
+    <div class="qna-form" id="qnaWriteForm">
+      <div>
+        <div class="qna-form-label">제목</div>
+        <input class="qna-input" id="qnaWriteTitle" type="text" placeholder="문의 제목을 입력하세요" maxlength="100"/>
+      </div>
+      <div>
+        <div class="qna-form-label">내용</div>
+        <textarea class="qna-textarea" id="qnaWriteContent" placeholder="문의 내용을 자세히 적어주세요"></textarea>
+      </div>
+      <div>
+        <div class="qna-toggle-row">
+          <label class="qna-toggle">
+            <input type="checkbox" id="qnaPrivateToggle" onchange="qnaTogglePrivate(this)"/>
+            <span class="qna-toggle-slider"></span>
+          </label>
+          <span class="qna-toggle-label">🔒 비공개</span>
+        </div>
+      </div>
+      <div id="qnaPasswordRow" style="display:none;">
+        <div class="qna-form-label">비밀번호 (나중에 조회 시 사용)</div>
+        <input class="qna-input" id="qnaWritePw" type="password" placeholder="비밀번호 입력"/>
+      </div>
+      <span class="qna-err" id="qnaWriteErr"></span>
+      <div class="qna-form-footer">
+        <button class="qna-btn-cancel" onclick="qnaShowList()">취소</button>
+        <button class="qna-btn-primary" onclick="qnaSubmitPost()">등록하기</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ③ 비공개 글 비밀번호 입력 화면 -->
+  <div id="qnaPwView" class="qna-view" style="display:none;">
+    <div class="qna-form">
+      <div style="text-align:center; padding: 10px 0;">
+        <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#cbd5e1" stroke-width="1.5">
+          <rect x="3" y="11" width="18" height="11" rx="2"/>
+          <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+        </svg>
+      </div>
+      <div style="font-size:0.82rem; color:#64748b; text-align:center;">비공개 글입니다.<br>비밀번호를 입력하세요.</div>
+      <input class="qna-input" id="qnaViewPw" type="password" placeholder="비밀번호"
+             onkeydown="if(event.key==='Enter') qnaLoadDetail(null, document.getElementById('qnaViewPw').value)"/>
+      <span class="qna-err" id="qnaPwErr"></span>
+      <div class="qna-form-footer">
+        <button class="qna-btn-cancel" onclick="qnaShowList()">취소</button>
+        <button class="qna-btn-primary" onclick="qnaLoadDetail(null, document.getElementById('qnaViewPw').value)">확인</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ④ 상세 화면 -->
+  <div id="qnaDetailView" class="qna-view" style="display:none;">
+    <div class="qna-detail-header">
+      <button class="qna-back-btn" onclick="qnaShowList()">◀</button>
+      <span class="qna-detail-title" id="qnaDetailTitle"></span>
+      <span class="qna-badge" id="qnaDetailBadge"></span>
+    </div>
+    <div class="qna-detail-scroll" id="qnaDetailScroll">
+      <div class="qna-detail-meta" id="qnaDetailMeta"></div>
+      <div class="qna-detail-content" id="qnaDetailContent"></div>
+      <div class="qna-reply-section-label">관리자 답변</div>
+      <div id="qnaReplies"></div>
+    </div>
+    <div class="qna-reply-input-area" id="qnaReplyInputArea">
+      <textarea class="qna-reply-textarea" id="qnaReplyContent" placeholder="답변을 입력하세요"
+                onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();qnaSubmitReply();}"></textarea>
+      <button class="qna-reply-send" onclick="qnaSubmitReply()">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <line x1="22" y1="2" x2="11" y2="13"/>
+          <polygon points="22 2 15 22 11 13 2 9 22 2"/>
+        </svg>
+      </button>
+    </div>
+  </div>
+
+  <!-- ⑤ 관리자 로그인 화면 -->
+  <div id="qnaAdminLoginView" class="qna-view" style="display:none;">
+    <div class="qna-form">
+      <div style="text-align:center; padding:10px 0;">
+        <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#cbd5e1" stroke-width="1.5">
+          <circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/>
+        </svg>
+      </div>
+      <div style="font-size:0.82rem; color:#64748b; text-align:center;">관리자 비밀번호를 입력하세요.</div>
+      <input class="qna-input" id="qnaAdminPw" type="password" placeholder="관리자 비밀번호"
+             onkeydown="if(event.key==='Enter') qnaAdminLogin()"/>
+      <span class="qna-err" id="qnaAdminErr"></span>
+      <div class="qna-form-footer">
+        <button class="qna-btn-cancel" onclick="qnaShowList()">취소</button>
+        <button class="qna-btn-primary" onclick="qnaAdminLogin()">로그인</button>
+      </div>
+    </div>
+  </div>
+
+</div><!-- /.chat-panel -->
+
+<script>
+(function () {
+  var _isAdmin    = false;
+  var _adminPw    = null;
+  var _currentPostId = null;
+  var _pendingPostId = null;   // 비공개 글 클릭 시 임시 저장
+
+  /* ── 패널 토글 ────────────────────────────────────────────── */
+  window.qnaToggle = function () {
+    var panel = document.getElementById('qnaPanel');
+    var opening = !panel.classList.contains('open');
+    panel.classList.toggle('open');
+    if (opening) qnaLoadList();
+  };
+
+  /* ── 화면 전환 헬퍼 ──────────────────────────────────────── */
+  function showOnly(id) {
+    ['qnaListView','qnaWriteView','qnaPwView','qnaDetailView','qnaAdminLoginView']
+      .forEach(function(v) {
+        document.getElementById(v).style.display = (v === id) ? 'flex' : 'none';
+      });
+  }
+
+  /* ── 목록 로드 ───────────────────────────────────────────── */
+  window.qnaShowList = function () {
+    showOnly('qnaListView');
+    document.getElementById('qnaPanelTitle').textContent = _isAdmin ? '문의 게시판 (관리자)' : '문의 게시판';
+    document.getElementById('qnaListLabel').textContent  = _isAdmin ? '전체 문의' : '공개 문의';
+    document.getElementById('qnaAdminBtn').style.display = _isAdmin ? 'none' : 'block';
+    qnaLoadList();
+  };
+
+  function qnaLoadList() {
+    var url     = _isAdmin ? '/api/qna/posts/all' : '/api/qna/posts';
+    var headers = {};
+    if (_isAdmin && _adminPw) headers['X-Admin-Password'] = _adminPw;
+
+    fetch(url, { headers: headers })
+    .then(function(r) { return r.json(); })
+    .then(function(posts) {
+      var scroll = document.getElementById('qnaListScroll');
+      if (!posts.length) {
+        scroll.innerHTML = '<div class="qna-empty"><svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#e2e8f0" stroke-width="1.5"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg><span>아직 문의 내역이 없습니다.</span></div>';
+        return;
+      }
+      scroll.innerHTML = '';
+      posts.forEach(function(p) {
+        var item = document.createElement('div');
+        item.className = 'qna-item' + (p.isPublic ? '' : ' private');
+        var lock = p.isPublic ? '' : ' <span class="qna-lock">🔒</span>';
+        item.innerHTML =
+          '<div class="qna-item-row1">' +
+            '<span class="qna-item-title">' + qnaEsc(p.title) + lock + '</span>' +
+            '<span class="qna-badge ' + (p.status === 'ANSWERED' ? 'answered' : 'waiting') + '">' +
+              (p.status === 'ANSWERED' ? '답변완료' : '대기중') + '</span>' +
+          '</div>' +
+          '<div class="qna-item-meta">' + qnaEsc(p.date) + '</div>';
+        item.addEventListener('click', function() { qnaClickPost(p); });
+        scroll.appendChild(item);
+      });
+    });
+  }
+
+  /* ── 글 클릭 ─────────────────────────────────────────────── */
+  function qnaClickPost(p) {
+    _currentPostId = p.id;
+    if (!p.isPublic && !_isAdmin) {
+      _pendingPostId = p.id;
+      showOnly('qnaPwView');
+      document.getElementById('qnaViewPw').value = '';
+      document.getElementById('qnaPwErr').style.display = 'none';
+      document.getElementById('qnaPanelTitle').textContent = '비공개 문의';
+    } else {
+      qnaLoadDetail(p.id, null);
+    }
+  }
+
+  /* ── 상세 로드 ───────────────────────────────────────────── */
+  window.qnaLoadDetail = function (postId, password) {
+    var id = postId || _pendingPostId || _currentPostId;
+    var headers = {};
+    if (password)  headers['X-Post-Password']  = password;
+    if (_isAdmin && _adminPw) headers['X-Admin-Password'] = _adminPw;
+
+    fetch('/api/qna/posts/' + id, { headers: headers })
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+      if (data.error) {
+        var err = document.getElementById('qnaPwErr');
+        err.textContent = data.error;
+        err.style.display = 'block';
+        return;
+      }
+      _currentPostId = id;
+      renderDetail(data);
+    });
+  };
+
+  function renderDetail(data) {
+    document.getElementById('qnaPanelTitle').textContent = '문의 상세';
+    document.getElementById('qnaDetailTitle').textContent = data.title;
+
+    var badge = document.getElementById('qnaDetailBadge');
+    badge.textContent = data.status === 'ANSWERED' ? '답변완료' : '대기중';
+    badge.className   = 'qna-badge ' + (data.status === 'ANSWERED' ? 'answered' : 'waiting');
+
+    document.getElementById('qnaDetailMeta').textContent = data.date;
+    document.getElementById('qnaDetailContent').textContent = data.content;
+
+    var repliesEl = document.getElementById('qnaReplies');
+    if (!data.replies || !data.replies.length) {
+      repliesEl.innerHTML = '<div class="qna-no-reply">아직 답변이 없습니다.</div>';
+    } else {
+      repliesEl.innerHTML = '';
+      data.replies.forEach(function(r) {
+        var div = document.createElement('div');
+        div.className = 'qna-reply-item';
+        div.innerHTML = '<p>' + qnaEsc(r.content) + '</p><span>' + qnaEsc(r.date) + '</span>';
+        repliesEl.appendChild(div);
+      });
+    }
+
+    // 관리자면 답변 입력창 표시
+    var replyArea = document.getElementById('qnaReplyInputArea');
+    replyArea.style.display = _isAdmin ? 'flex' : 'none';
+    document.getElementById('qnaReplyContent').value = '';
+
+    showOnly('qnaDetailView');
+  }
+
+  /* ── 글쓰기 ─────────────────────────────────────────────── */
+  window.qnaShowWrite = function () {
+    document.getElementById('qnaWriteTitle').value   = '';
+    document.getElementById('qnaWriteContent').value = '';
+    document.getElementById('qnaWritePw').value      = '';
+    document.getElementById('qnaPrivateToggle').checked = false;
+    document.getElementById('qnaPasswordRow').style.display = 'none';
+    document.getElementById('qnaWriteErr').style.display    = 'none';
+    document.getElementById('qnaPanelTitle').textContent = '문의 글쓰기';
+    showOnly('qnaWriteView');
+  };
+
+  window.qnaTogglePrivate = function (cb) {
+    document.getElementById('qnaPasswordRow').style.display = cb.checked ? 'block' : 'none';
+  };
+
+  window.qnaSubmitPost = function () {
+    var title    = document.getElementById('qnaWriteTitle').value.trim();
+    var content  = document.getElementById('qnaWriteContent').value.trim();
+    var isPublic = !document.getElementById('qnaPrivateToggle').checked;
+    var password = document.getElementById('qnaWritePw').value.trim();
+    var err      = document.getElementById('qnaWriteErr');
+
+    if (!title)   { err.textContent = '제목을 입력하세요.';   err.style.display = 'block'; return; }
+    if (!content) { err.textContent = '내용을 입력하세요.';   err.style.display = 'block'; return; }
+    if (!isPublic && !password) { err.textContent = '비공개 글에는 비밀번호가 필요합니다.'; err.style.display = 'block'; return; }
+    err.style.display = 'none';
+
+    fetch('/api/qna/posts', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ title: title, content: content, isPublic: isPublic, password: password || null })
+    })
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+      if (data.error) { err.textContent = data.error; err.style.display = 'block'; return; }
+      qnaShowList();
+    });
+  };
+
+  /* ── 관리자 로그인 ───────────────────────────────────────── */
+  window.qnaShowAdminLogin = function () {
+    document.getElementById('qnaAdminPw').value = '';
+    document.getElementById('qnaAdminErr').style.display = 'none';
+    document.getElementById('qnaPanelTitle').textContent = '관리자 로그인';
+    showOnly('qnaAdminLoginView');
+  };
+
+  window.qnaAdminLogin = function () {
+    var pw  = document.getElementById('qnaAdminPw').value.trim();
+    var err = document.getElementById('qnaAdminErr');
+    if (!pw) { err.textContent = '비밀번호를 입력하세요.'; err.style.display = 'block'; return; }
+
+    fetch('/api/qna/posts/all', {
+      headers: { 'X-Admin-Password': pw }
+    })
+    .then(function(r) {
+      if (r.status === 403) { err.textContent = '비밀번호가 틀렸습니다.'; err.style.display = 'block'; return; }
+      _isAdmin = true;
+      _adminPw = pw;
+      sessionStorage.setItem('qnaAdmin', pw);
+      qnaShowList();
+    });
+  };
+
+  /* ── 답변 등록 ───────────────────────────────────────────── */
+  window.qnaSubmitReply = function () {
+    var content = document.getElementById('qnaReplyContent').value.trim();
+    if (!content || !_currentPostId) return;
+
+    fetch('/api/qna/posts/' + _currentPostId + '/replies', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Admin-Password': _adminPw
+      },
+      body: JSON.stringify({ content: content })
+    })
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+      if (data.error) return;
+      qnaLoadDetail(_currentPostId, null);
+    });
+  };
+
+  /* ── XSS 방지 ────────────────────────────────────────────── */
+  function qnaEsc(s) {
+    return String(s || '')
+      .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+      .replace(/\n/g,'<br>');
+  }
+
+  /* ── 세션 복원 (관리자 로그인 유지) ─────────────────────── */
+  var savedAdmin = sessionStorage.getItem('qnaAdmin');
+  if (savedAdmin) { _isAdmin = true; _adminPw = savedAdmin; }
+
+}());
+</script>
+
+</aside>
+
+
+
+<!--
+  ── Fragment: topbarStyles ───────────────────────────────────────
+  모든 페이지 공통 상단 바 CSS.
+  각 페이지 <head> 안에 삽입 (sidebarStyles 뒤에):
+    <th:block th:replace="~{fragments/sidebar :: topbarStyles}"></th:block>
+-->
+<th:block th:fragment="topbarStyles">
+<style>
+  /* ── Topbar ─────────────────────────────────────────────────── */
+  .topbar {
+    background: #fff;
+    border-bottom: 1px solid #e2e8f0;
+    padding: 0 32px;
+    height: 60px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    position: sticky;
+    top: 0;
+    z-index: 50;
+  }
+  .topbar-breadcrumb {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.84rem;
+    color: #64748b;
+  }
+  .topbar-breadcrumb a {
+    color: #64748b;
+    text-decoration: none;
+    transition: color .15s;
+  }
+  .topbar-breadcrumb a:hover { color: #1d4ed8; }
+  .topbar-breadcrumb .sep { color: #cbd5e1; }
+  .topbar-breadcrumb .page-title {
+    font-size: 0.92rem;
+    font-weight: 700;
+    color: #1e293b;
+  }
+  .topbar-right {
+    margin-left: auto;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .topbar-date {
+    font-size: 0.78rem;
+    color: #94a3b8;
+  }
+  .env-badge {
+    font-size: 0.7rem;
+    font-weight: 700;
+    background: #dcfce7;
+    color: #166534;
+    border: 1px solid #86efac;
+    padding: 2px 10px;
+    border-radius: 10px;
+  }
+  .btn-guide {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: #475569;
+    background: #f1f5f9;
+    border: 1px solid #e2e8f0;
+    padding: 5px 12px;
+    border-radius: 7px;
+    cursor: pointer;
+    transition: background .15s;
+  }
+  .btn-guide:hover { background: #e2e8f0; }
+</style>
+</th:block>
+
+<!--
+  ── Fragment: topbarFull(pageTitle, guideAction) ─────────────────
+  공통 상단 바 HTML.
+  각 페이지 <body> 안 .main-wrap 첫 번째 자식으로 삽입:
+    <th:block th:replace="~{fragments/sidebar :: topbarFull('페이지명', '')}"></th:block>
+
+  파라미터
+    pageTitle   : 브레드크럼에 표시할 현재 페이지명 (예: '요구사항 비교')
+    guideAction : 사용 가이드 버튼 onclick 값. 빈 문자열이면 버튼 미표시.
+-->
+<header th:fragment="topbarFull(pageTitle, guideAction)" class="topbar">
+  <div class="topbar-breadcrumb">
+    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <rect x="3" y="3" width="7" height="7" rx="1"/>
+      <rect x="14" y="3" width="7" height="7" rx="1"/>
+      <rect x="3" y="14" width="7" height="7" rx="1"/>
+      <rect x="14" y="14" width="7" height="7" rx="1"/>
+    </svg>
+    <a href="/">포털</a>
+    <span class="sep">›</span>
+    <span class="page-title" th:text="${pageTitle}">페이지</span>
+  </div>
+  <div class="topbar-right">
+    <span class="topbar-date" id="topbarDate"></span>
+    <span class="env-badge">● 운영</span>
+    <button th:if="${!guideAction.isEmpty()}"
+            class="btn-guide"
+            th:attr="onclick=${guideAction}">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <circle cx="12" cy="12" r="10"/>
+        <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/>
+        <line x1="12" y1="17" x2="12.01" y2="17"/>
+      </svg>
+      사용 가이드
+    </button>
+  </div>
+</header>
+
+<script th:fragment="topbarDateScript">
+  (function() {
+    var el = document.getElementById('topbarDate');
+    if (!el) return;
+    var d = new Date();
+    el.textContent = d.getFullYear() + '.' +
+      String(d.getMonth()+1).padStart(2,'0') + '.' +
+      String(d.getDate()).padStart(2,'0') + ' (' +
+      ['일','월','화','수','목','금','토'][d.getDay()] + ')';
+  })();
+</script>
+
+</body>
+</html>

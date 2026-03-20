@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>SQL 품질 검사 — JSU Portal</title>
+    <th:block th:replace="~{fragments/sidebar :: sidebarStyles}"></th:block>
+    <th:block th:replace="~{fragments/sidebar :: topbarStyles}"></th:block>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: 'Segoe UI', 'Apple SD Gothic Neo', sans-serif; background: #f1f5f9; color: #1e293b; min-height: 100vh; display: flex; }
+
+        .main-wrap { flex: 1; min-height: 100vh; display: flex; flex-direction: column; }
+
+        /* 상단 헤더 */
+
+        /* 콘텐츠 */
+        .content { padding: 28px 32px; flex: 1; display: flex; flex-direction: column; gap: 20px; }
+
+        /* 페이지 헤더 */
+        .page-header { margin-bottom: 4px; }
+        .page-header h1 { font-size: 1.4rem; font-weight: 700; color: #0f172a; }
+        .page-header p { color: #64748b; font-size: 0.875rem; margin-top: 4px; }
+
+        /* 입력 패널 */
+        .input-panel { background: #fff; border-radius: 12px; border: 1px solid #e2e8f0; overflow: hidden; }
+        .panel-toolbar { display: flex; align-items: center; gap: 10px; padding: 12px 16px; border-bottom: 1px solid #f1f5f9; background: #f8fafc; }
+        .panel-label { font-size: 0.8rem; font-weight: 700; color: #475569; flex: 1; }
+        .line-count-badge { font-size: 0.7rem; background: #f1f5f9; color: #64748b; border: 1px solid #e2e8f0; padding: 2px 8px; border-radius: 8px; }
+
+        .toolbar-btn { display: inline-flex; align-items: center; gap: 5px; font-size: 0.75rem; font-weight: 600; color: #475569; background: #fff; border: 1px solid #e2e8f0; padding: 5px 10px; border-radius: 6px; cursor: pointer; transition: background 0.15s; }
+        .toolbar-btn:hover { background: #f1f5f9; }
+        .toolbar-btn.primary { background: #1d4ed8; color: #fff; border-color: #1d4ed8; }
+        .toolbar-btn.primary:hover { background: #1e40af; }
+        .toolbar-btn.primary:disabled { background: #93c5fd; border-color: #93c5fd; cursor: not-allowed; }
+
+        textarea { width: 100%; min-height: 260px; resize: vertical; padding: 14px 16px; font-family: 'Fira Code', 'Consolas', monospace; font-size: 0.82rem; line-height: 1.6; border: none; outline: none; background: transparent; color: #1e293b; }
+
+        /* 커스텀 패턴 입력 */
+        .custom-row { display: flex; align-items: center; gap: 10px; padding: 10px 16px; border-top: 1px solid #f1f5f9; background: #fafafa; }
+        .custom-label { font-size: 0.75rem; font-weight: 600; color: #64748b; white-space: nowrap; }
+        .custom-input { flex: 1; font-size: 0.78rem; border: 1px solid #e2e8f0; border-radius: 6px; padding: 5px 10px; outline: none; font-family: 'Fira Code', 'Consolas', monospace; color: #1e293b; background: #fff; }
+        .custom-input:focus { border-color: #93c5fd; }
+        .custom-hint { font-size: 0.7rem; color: #94a3b8; white-space: nowrap; }
+
+        /* 결과 영역 */
+        .result-panel { background: #fff; border-radius: 12px; border: 1px solid #e2e8f0; overflow: hidden; display: none; }
+        .result-panel.visible { display: block; }
+
+        .result-header { display: flex; align-items: center; gap: 14px; padding: 14px 20px; border-bottom: 1px solid #f1f5f9; background: #f8fafc; }
+        .result-title { font-size: 0.88rem; font-weight: 700; color: #1e293b; flex: 1; }
+        .badge { font-size: 0.7rem; font-weight: 700; padding: 2px 9px; border-radius: 8px; }
+        .badge.high   { background: #fee2e2; color: #991b1b; }
+        .badge.medium { background: #fef3c7; color: #92400e; }
+        .badge.low    { background: #f1f5f9; color: #475569; border: 1px solid #e2e8f0; }
+        .badge.ok     { background: #dcfce7; color: #166534; }
+
+        /* 문제 없음 */
+        .no-issue { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; padding: 48px; color: #94a3b8; font-size: 0.875rem; }
+
+        /* 이슈 목록 */
+        .issue-item { border-bottom: 1px solid #f1f5f9; }
+        .issue-item:last-child { border-bottom: none; }
+        .issue-header { display: flex; align-items: center; gap: 12px; padding: 13px 20px; cursor: pointer; transition: background 0.15s; user-select: none; }
+        .issue-header:hover { background: #f8fafc; }
+        .issue-rule { font-size: 0.68rem; font-weight: 700; color: #94a3b8; font-family: monospace; width: 36px; flex-shrink: 0; }
+        .severity-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+        .severity-dot.HIGH   { background: #ef4444; }
+        .severity-dot.MEDIUM { background: #f59e0b; }
+        .severity-dot.LOW    { background: #94a3b8; }
+        .issue-title { flex: 1; font-size: 0.855rem; font-weight: 600; color: #1e293b; }
+        .issue-line { font-size: 0.72rem; color: #94a3b8; white-space: nowrap; font-family: monospace; }
+        .issue-chevron { color: #94a3b8; transition: transform 0.22s ease; flex-shrink: 0; }
+        .issue-item.open .issue-chevron { transform: rotate(180deg); }
+
+        .issue-body { max-height: 0; overflow: hidden; transition: max-height 0.28s ease, padding 0.28s ease; padding: 0 20px; font-size: 0.835rem; color: #475569; line-height: 1.7; border-top: 0 solid #f1f5f9; }
+        .issue-item.open .issue-body { max-height: 200px; padding: 10px 20px 14px; border-top: 1px solid #f1f5f9; }
+        .issue-line-preview { display: block; margin-top: 6px; font-family: 'Fira Code', 'Consolas', monospace; font-size: 0.78rem; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; padding: 6px 10px; color: #64748b; overflow-x: auto; white-space: nowrap; }
+
+        /* 파일 드롭존 */
+        .dropzone { border: 2px dashed #e2e8f0; border-radius: 8px; padding: 10px 16px; display: flex; align-items: center; gap: 8px; cursor: pointer; transition: border-color 0.15s, background 0.15s; }
+        .dropzone:hover, .dropzone.drag-over { border-color: #93c5fd; background: #eff6ff; }
+        .dropzone span { font-size: 0.75rem; color: #64748b; }
+        .dropzone .file-name { font-size: 0.75rem; color: #1d4ed8; font-weight: 600; }
+        input[type=file] { display: none; }
+
+        @media (max-width: 768px) { .main-wrap { margin-left: 0; } }
+    </style>
+</head>
+<body>
+
+<th:block th:replace="~{fragments/sidebar :: sidebarFull('/sql')}"></th:block>
+
+<div class="main-wrap">
+    <th:block th:replace="~{fragments/sidebar :: topbarFull('SQL 품질 검사', 'openGuideModal()')}"></th:block>
+
+    <main class="content">
+
+        <!-- 페이지 헤더 -->
+        <div class="page-header">
+            <h1>🗄️ SQL 품질 검사</h1>
+            <p>SQL 쿼리를 입력하면 SELECT *, 인덱스 풀스캔, 페이지네이션 누락 등 품질 문제를 규칙 기반으로 탐지합니다. 팀 금지 패턴을 직접 등록할 수 있습니다.</p>
+        </div>
+
+        <!-- 입력 패널 -->
+        <div class="input-panel">
+            <div class="panel-toolbar">
+                <span class="panel-label">🗄️ SQL 입력</span>
+                <span class="line-count-badge" id="lineCountBadge">0 줄</span>
+                <!-- 파일 업로드 -->
+                <div class="dropzone" id="dropzone" onclick="document.getElementById('fileInput').click()"
+                     ondragover="event.preventDefault(); this.classList.add('drag-over')"
+                     ondragleave="this.classList.remove('drag-over')"
+                     ondrop="handleDrop(event)">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#64748b" stroke-width="2">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                        <polyline points="17 8 12 3 7 8"/>
+                        <line x1="12" y1="3" x2="12" y2="15"/>
+                    </svg>
+                    <span id="dropzoneName">.sql 파일 업로드</span>
+                </div>
+                <input type="file" id="fileInput" accept=".sql" onchange="handleFileSelect(this)"/>
+                <button class="toolbar-btn" onclick="clearAll()">초기화</button>
+                <button class="toolbar-btn primary" id="checkBtn" onclick="runCheck()">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+                    </svg>
+                    검사 실행
+                </button>
+            </div>
+            <textarea id="sqlInput" placeholder="SELECT * FROM orders WHERE status = 'PENDING';" spellcheck="false"
+                      oninput="updateLineCount()"></textarea>
+            <div class="custom-row">
+                <span class="custom-label">🚫 커스텀 금지 패턴</span>
+                <input type="text" class="custom-input" id="customPatterns"
+                       placeholder="예: TRUNCATE, DROP TABLE, NOLOCK"/>
+                <span class="custom-hint">쉼표로 구분</span>
+            </div>
+        </div>
+
+        <!-- 결과 패널 -->
+        <div class="result-panel" id="resultPanel">
+            <div class="result-header">
+                <span class="result-title" id="resultTitle">검사 결과</span>
+                <span class="badge high"   id="badgeHigh"   style="display:none"></span>
+                <span class="badge medium" id="badgeMedium" style="display:none"></span>
+                <span class="badge low"    id="badgeLow"    style="display:none"></span>
+                <span class="badge ok"     id="badgeOk"     style="display:none">✓ 문제 없음</span>
+            </div>
+            <div id="resultBody"></div>
+        </div>
+
+    </main>
+</div>
+
+<!-- 가이드 모달 -->
+<div id="guideModal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.4); z-index:200; align-items:center; justify-content:center;">
+    <div style="background:#fff; border-radius:14px; width:560px; max-height:80vh; overflow-y:auto; box-shadow:0 20px 60px rgba(0,0,0,0.2);">
+        <div style="display:flex; align-items:center; justify-content:space-between; padding:20px 24px; border-bottom:1px solid #f1f5f9;">
+            <strong style="font-size:1rem;">SQL 품질 검사 — 규칙 가이드</strong>
+            <button onclick="document.getElementById('guideModal').style.display='none'"
+                    style="background:none; border:none; font-size:1.3rem; cursor:pointer; color:#94a3b8;">×</button>
+        </div>
+        <div style="padding:20px 24px; display:flex; flex-direction:column; gap:14px; font-size:0.855rem; line-height:1.7;">
+            <div><strong style="color:#ef4444;">SQ01</strong> <strong>SELECT *</strong> — 불필요한 컬럼 조회로 네트워크·메모리 비용 증가. 필요한 컬럼만 명시.</div>
+            <div><strong style="color:#ef4444;">SQ02</strong> <strong>WHERE 없는 UPDATE</strong> — 전체 행 변경 위험. 의도적 전체 갱신이 아니면 WHERE 필수.</div>
+            <div><strong style="color:#ef4444;">SQ03</strong> <strong>WHERE 없는 DELETE</strong> — 전체 행 삭제 위험. WHERE 조건 반드시 추가.</div>
+            <div><strong style="color:#f59e0b;">SQ04</strong> <strong>앞 와일드카드 LIKE</strong> — <code style="background:#f1f5f9;padding:1px 5px;border-radius:4px;">LIKE '%값'</code> 형태는 인덱스 풀스캔 유발. <code style="background:#f1f5f9;padding:1px 5px;border-radius:4px;">LIKE '값%'</code> 또는 전문 검색 고려.</div>
+            <div><strong style="color:#f59e0b;">SQ05</strong> <strong>페이지네이션 누락</strong> — LIMIT / ROWNUM / FETCH NEXT 없는 대량 조회. 메모리 초과·지연 위험.</div>
+            <div><strong style="color:#f59e0b;">SQ06</strong> <strong>서브쿼리 중첩</strong> — 인라인 서브쿼리는 N+1 문제 유발 가능. JOIN 또는 WITH(CTE) 리팩터링 고려.</div>
+            <div><strong style="color:#64748b;">SQ07</strong> <strong>OR 조건 과다</strong> — 3개 이상 OR는 인덱스 활용 어려움. IN 절이나 UNION 분리 고려.</div>
+            <div><strong style="color:#ef4444;">SQ08</strong> <strong>커스텀 금지 패턴</strong> — 팀에서 직접 등록한 금지 키워드 감지.</div>
+        </div>
+    </div>
+</div>
+
+<script>
+    function updateLineCount() {
+        const sql = document.getElementById('sqlInput').value;
+        const count = sql === '' ? 0 : sql.split('\n').length;
+        document.getElementById('lineCountBadge').textContent = count.toLocaleString() + ' 줄';
+    }
+
+    function clearAll() {
+        document.getElementById('sqlInput').value = '';
+        document.getElementById('customPatterns').value = '';
+        document.getElementById('dropzoneName').textContent = '.sql 파일 업로드';
+        document.getElementById('fileInput').value = '';
+        document.getElementById('resultPanel').classList.remove('visible');
+        updateLineCount();
+    }
+
+    async function handleFileSelect(input) {
+        if (!input.files.length) return;
+        await uploadFile(input.files[0]);
+    }
+
+    async function handleDrop(event) {
+        event.preventDefault();
+        document.getElementById('dropzone').classList.remove('drag-over');
+        const file = event.dataTransfer.files[0];
+        if (!file) return;
+        if (!file.name.toLowerCase().endsWith('.sql')) {
+            alert('.sql 파일만 업로드할 수 있습니다.');
+            return;
+        }
+        await uploadFile(file);
+    }
+
+    async function uploadFile(file) {
+        const formData = new FormData();
+        formData.append('file', file);
+        try {
+            const res = await fetch('/api/sql/upload', { method: 'POST', body: formData });
+            const data = await res.json();
+            if (data.error) { alert(data.error); return; }
+            document.getElementById('sqlInput').value = data.text;
+            document.getElementById('dropzoneName').innerHTML =
+                '<span class="file-name">📄 ' + data.filename + '</span>';
+            updateLineCount();
+        } catch (e) {
+            alert('파일 업로드 중 오류가 발생했습니다.');
+        }
+    }
+
+    async function runCheck() {
+        const sql = document.getElementById('sqlInput').value.trim();
+        if (!sql) { alert('SQL을 입력하거나 파일을 업로드하세요.'); return; }
+
+        const btn = document.getElementById('checkBtn');
+        btn.disabled = true;
+        btn.textContent = '검사 중…';
+
+        try {
+            const res = await fetch('/api/sql/check', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    sql,
+                    customPatterns: document.getElementById('customPatterns').value
+                })
+            });
+            const data = await res.json();
+            renderResult(data);
+        } catch (e) {
+            alert('검사 중 오류가 발생했습니다.');
+        } finally {
+            btn.disabled = false;
+            btn.innerHTML = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg> 검사 실행';
+        }
+    }
+
+    function renderResult(data) {
+        const panel = document.getElementById('resultPanel');
+        panel.classList.add('visible');
+
+        // 배지
+        ['badgeHigh','badgeMedium','badgeLow','badgeOk'].forEach(id =>
+            document.getElementById(id).style.display = 'none');
+
+        document.getElementById('resultTitle').textContent =
+            '검사 결과 — 총 ' + data.total + '건';
+
+        if (data.total === 0) {
+            document.getElementById('badgeOk').style.display = '';
+            document.getElementById('resultBody').innerHTML =
+                '<div class="no-issue"><svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#86efac" stroke-width="1.5"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg><span>발견된 문제가 없습니다.</span></div>';
+            return;
+        }
+
+        if (data.highCount)   { const b = document.getElementById('badgeHigh');   b.style.display=''; b.textContent='HIGH ' + data.highCount; }
+        if (data.mediumCount) { const b = document.getElementById('badgeMedium'); b.style.display=''; b.textContent='MEDIUM ' + data.mediumCount; }
+        if (data.lowCount)    { const b = document.getElementById('badgeLow');    b.style.display=''; b.textContent='LOW ' + data.lowCount; }
+
+        document.getElementById('resultBody').innerHTML =
+            data.issues.map((issue, idx) => `
+                <div class="issue-item" id="issue-${idx}">
+                    <div class="issue-header" onclick="toggleIssue(${idx})">
+                        <span class="issue-rule">${issue.ruleId}</span>
+                        <span class="severity-dot ${issue.severity}"></span>
+                        <span class="issue-title">${escHtml(issue.title)}</span>
+                        <span class="issue-line">${issue.line > 0 ? 'L' + issue.line : '전체'}</span>
+                        <svg class="issue-chevron" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                            <polyline points="6 9 12 15 18 9"/>
+                        </svg>
+                    </div>
+                    <div class="issue-body">
+                        ${escHtml(issue.description)}
+                        ${issue.lineText ? '<code class="issue-line-preview">' + escHtml(issue.lineText) + '</code>' : ''}
+                    </div>
+                </div>`).join('');
+
+        panel.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+
+    function toggleIssue(idx) {
+        const item = document.getElementById('issue-' + idx);
+        const isOpen = item.classList.contains('open');
+        document.querySelectorAll('.issue-item.open').forEach(el => el.classList.remove('open'));
+        if (!isOpen) item.classList.add('open');
+    }
+
+    function escHtml(str) {
+        return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+    }
+
+    function openGuideModal() {
+        document.getElementById('guideModal').style.display = 'flex';
+    }
+
+    // 모달 외부 클릭 닫기
+    document.getElementById('guideModal').addEventListener('click', function(e) {
+        if (e.target === this) this.style.display = 'none';
+    });
+</script>
+
+</body>
+</html>
