@@ -1,0 +1,33 @@
+spring:
+  application:
+    name: jsu
+  docker:
+    compose:
+      enabled: false
+  servlet:
+    multipart:
+      max-file-size: 20MB
+      max-request-size: 20MB
+  datasource:
+    url: jdbc:postgresql://localhost:5432/jsudb
+    driver-class-name: org.postgresql.Driver
+    username: jsu
+    password: jsu1234
+  jpa:
+    hibernate:
+      ddl-auto: none
+    show-sql: false
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+  flyway:
+    enabled: false        # auto-config 비활성 → FlywayConfig.java 에서 직접 Bean 등록
+    baseline-on-migrate: true
+    baseline-version: 0
+
+chat:
+  admin-password: admin1234   # ← 원하는 관리자 비밀번호로 변경하세요
+
+logging:
+  level:
+    org.flywaydb: INFO
