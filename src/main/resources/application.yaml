@@ -9,10 +9,10 @@ spring:
       max-file-size: 20MB
       max-request-size: 20MB
   datasource:
-    url: jdbc:postgresql://localhost:5432/jsudb
+    url: ${DB_URL:jdbc:postgresql://localhost:5432/jsudb}
     driver-class-name: org.postgresql.Driver
-    username: jsu
-    password: jsu1234
+    username: ${DB_USERNAME:jsu}
+    password: ${DB_PASSWORD:jsu1234}
   jpa:
     hibernate:
       ddl-auto: none
@@ -25,8 +25,10 @@ spring:
     baseline-on-migrate: true
     baseline-version: 0
 
-chat:
-  admin-password: admin1234   # ← 원하는 관리자 비밀번호로 변경하세요
+app:
+  # 관리자 비밀번호. 환경변수 APP_ADMIN_PASSWORD로 오버라이드 가능.
+  # 예) APP_ADMIN_PASSWORD=my-secure-pw ./gradlew bootRun
+  admin-password: ${APP_ADMIN_PASSWORD:admin1234}
 
 logging:
   level:

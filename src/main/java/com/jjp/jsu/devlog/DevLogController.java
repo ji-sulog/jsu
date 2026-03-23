@@ -1,5 +1,7 @@
 package com.jjp.jsu.devlog;
 
+import com.jjp.jsu.common.AdminAuthService;
+import jakarta.servlet.http.HttpSession;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
@@ -10,6 +12,7 @@ import org.springframework.web.bind.annotation.*;
 public class DevLogController {
 
     private final DevLogService service;
+    private final AdminAuthService adminAuthService;
 
     /** 페이지 렌더링 */
     @GetMapping("/devlog")
@@ -33,22 +36,14 @@ public class DevLogController {
         return ResponseEntity.ok(service.getDetail(id));
     }
 
-    /** GET /api/devlog/admin-check — 관리자 비밀번호 확인 */
-    @GetMapping("/api/devlog/admin-check")
-    @ResponseBody
-    public ResponseEntity<DevLogStatusResponse> adminCheck(
-            @RequestHeader(value = "X-Admin-Password", required = false) String pw) {
-        service.validateAdmin(pw);
-        return ResponseEntity.ok(new DevLogStatusResponse("OK"));
-    }
-
     /** POST /api/devlog — 등록 (관리자) */
     @PostMapping("/api/devlog")
     @ResponseBody
     public ResponseEntity<DevLogIdResponse> create(
-            @RequestHeader(value = "X-Admin-Password", required = false) String pw,
+            HttpSession session,
             @RequestBody DevLogUpsertRequest request) {
-        return ResponseEntity.ok(service.create(pw, request));
+        adminAuthService.requireLogin(session);
+        return ResponseEntity.ok(service.create(request));
     }
 
     /** PUT /api/devlog/{id} — 수정 (관리자) */
@@ -56,9 +51,10 @@ public class DevLogController {
     @ResponseBody
     public ResponseEntity<DevLogStatusResponse> update(
             @PathVariable Long id,
-            @RequestHeader(value = "X-Admin-Password", required = false) String pw,
+            HttpSession session,
             @RequestBody DevLogUpsertRequest request) {
-        return ResponseEntity.ok(service.update(id, pw, request));
+        adminAuthService.requireLogin(session);
+        return ResponseEntity.ok(service.update(id, request));
     }
 
     /** DELETE /api/devlog/{id} — 삭제 (관리자) */
@@ -66,7 +62,8 @@ public class DevLogController {
     @ResponseBody
     public ResponseEntity<DevLogStatusResponse> delete(
             @PathVariable Long id,
-            @RequestHeader(value = "X-Admin-Password", required = false) String pw) {
-        return ResponseEntity.ok(service.delete(id, pw));
+            HttpSession session) {
+        adminAuthService.requireLogin(session);
+        return ResponseEntity.ok(service.delete(id));
     }
 }

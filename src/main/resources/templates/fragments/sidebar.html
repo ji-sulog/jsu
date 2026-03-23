@@ -123,7 +123,8 @@
          th:classappend="${currentPath == tool.href} ? ' active'"
          th:href="${tool.href}">
 
-        <svg th:if="${tool.id == 1}" width="16" height="16" viewBox="0 0 24 24"
+        <!-- 아이콘: tool.id(DB 자동증가 PK) 대신 icon_type(고정 키)으로 분기 -->
+        <svg th:if="${tool.iconType == 'compare'}" width="16" height="16" viewBox="0 0 24 24"
              fill="none" stroke="currentColor" stroke-width="2">
           <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
           <polyline points="14 2 14 8 20 8"/>
@@ -131,17 +132,23 @@
           <line x1="16" y1="17" x2="8" y2="17"/>
         </svg>
 
-        <svg th:if="${tool.id == 2}" width="16" height="16" viewBox="0 0 24 24"
+        <svg th:if="${tool.iconType == 'scan'}" width="16" height="16" viewBox="0 0 24 24"
              fill="none" stroke="currentColor" stroke-width="2">
           <circle cx="11" cy="11" r="8"/>
           <line x1="21" y1="21" x2="16.65" y2="16.65"/>
         </svg>
 
-        <svg th:if="${tool.id == 3}" width="16" height="16" viewBox="0 0 24 24"
+        <svg th:if="${tool.iconType == 'sql'}" width="16" height="16" viewBox="0 0 24 24"
              fill="none" stroke="currentColor" stroke-width="2">
           <ellipse cx="12" cy="5" rx="9" ry="3"/>
           <path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/>
           <path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/>
+        </svg>
+
+        <svg th:if="${tool.iconType == 'naming'}" width="16" height="16" viewBox="0 0 24 24"
+             fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M12 20h9"/>
+          <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/>
         </svg>
 
         <span th:text="${tool.name}"></span>
@@ -554,7 +561,6 @@
 <script>
 (function () {
   var _isAdmin    = false;
-  var _adminPw    = null;
   var _currentPostId = null;
   var _pendingPostId = null;   // 비공개 글 클릭 시 임시 저장
   var _currentPostPassword = null;
@@ -566,7 +572,12 @@
     var panel = document.getElementById('qnaPanel');
     var opening = !panel.classList.contains('open');
     panel.classList.toggle('open');
-    if (opening) qnaLoadList();
+    if (opening) {
+      // 열 때마다 세션 상태 재확인 후 목록 로드 (페이지 로드 race condition 방지)
+      fetch('/api/admin/status', { credentials: 'same-origin' })
+      .then(function(r) { return r.json(); })
+      .then(function(data) { _isAdmin = data.loggedIn; qnaShowList(); });
+    }
   };
 
   /* ── 화면 전환 헬퍼 ──────────────────────────────────────── */
@@ -588,11 +599,9 @@
   };
 
   function qnaLoadList() {
-    var url     = _isAdmin ? '/api/qna/posts/all' : '/api/qna/posts';
-    var headers = {};
-    if (_isAdmin && _adminPw) headers['X-Admin-Password'] = _adminPw;
+    var url = _isAdmin ? '/api/qna/posts/all' : '/api/qna/posts';
 
-    fetch(url, { headers: headers })
+    fetch(url, { credentials: 'same-origin' })
     .then(function(r) { return r.json(); })
     .then(function(posts) {
       var scroll = document.getElementById('qnaListScroll');
@@ -640,10 +649,9 @@
   window.qnaLoadDetail = function (postId, password) {
     var id = postId || _pendingPostId || _currentPostId;
     var headers = {};
-    if (password)  headers['X-Post-Password']  = password;
-    if (_isAdmin && _adminPw) headers['X-Admin-Password'] = _adminPw;
+    if (password) headers['X-Post-Password'] = password;
 
-    fetch('/api/qna/posts/' + id, { headers: headers })
+    fetch('/api/qna/posts/' + id, { headers: headers, credentials: 'same-origin' })
     .then(function(r) { return r.json(); })
     .then(function(data) {
       if (data.error) {
@@ -776,14 +784,14 @@
       url = '/api/qna/posts/' + _currentPostId;
       method = 'PUT';
       body = JSON.stringify({ title: title, content: content });
-      if (_isAdmin && _adminPw) headers['X-Admin-Password'] = _adminPw;
-      else if (_currentPostPassword) headers['X-Post-Password'] = _currentPostPassword;
+      if (!_isAdmin && _currentPostPassword) headers['X-Post-Password'] = _currentPostPassword;
     }
 
     fetch(url, {
       method: method,
       headers: headers,
-      body: body
+      body: body,
+      credentials: 'same-origin'
     })
     .then(function(r) { return r.json(); })
     .then(function(data) {
@@ -801,12 +809,12 @@
     if (!confirm('이 비공개 문의를 삭제하시겠습니까? 삭제 후에는 목록에서 보이지 않습니다.')) return;
 
     var headers = {};
-    if (_isAdmin && _adminPw) headers['X-Admin-Password'] = _adminPw;
-    else if (_currentPostPassword) headers['X-Post-Password'] = _currentPostPassword;
+    if (!_isAdmin && _currentPostPassword) headers['X-Post-Password'] = _currentPostPassword;
 
     fetch('/api/qna/posts/' + _currentPostId, {
       method: 'DELETE',
-      headers: headers
+      headers: headers,
+      credentials: 'same-origin'
     })
     .then(function(r) { return r.json(); })
     .then(function(data) {
@@ -834,23 +842,25 @@
     var err = document.getElementById('qnaAdminErr');
     if (!pw) { err.textContent = '비밀번호를 입력하세요.'; err.style.display = 'block'; return; }
 
-    fetch('/api/qna/posts/all', {
-      headers: { 'X-Admin-Password': pw }
+    fetch('/api/admin/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'same-origin',
+      body: JSON.stringify({ password: pw })
     })
     .then(function(r) {
-      if (r.status === 403) { err.textContent = '비밀번호가 틀렸습니다.'; err.style.display = 'block'; return; }
+      if (!r.ok) { err.textContent = '비밀번호가 틀렸습니다.'; err.style.display = 'block'; return; }
       _isAdmin = true;
-      _adminPw = pw;
-      sessionStorage.setItem('qnaAdmin', pw);
       qnaShowList();
     });
   };
 
   window.qnaAdminLogout = function () {
-    _isAdmin = false;
-    _adminPw = null;
-    sessionStorage.removeItem('qnaAdmin');
-    qnaShowList();
+    fetch('/api/admin/logout', { method: 'POST', credentials: 'same-origin' })
+    .then(function() {
+      _isAdmin = false;
+      qnaShowList();
+    });
   };
 
   /* ── 답변 등록 ───────────────────────────────────────────── */
@@ -860,10 +870,8 @@
 
     fetch('/api/qna/posts/' + _currentPostId + '/replies', {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'X-Admin-Password': _adminPw
-      },
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'same-origin',
       body: JSON.stringify({ content: content })
     })
     .then(function(r) { return r.json(); })
@@ -880,9 +888,7 @@
       .replace(/\n/g,'<br>');
   }
 
-  /* ── 세션 복원 (관리자 로그인 유지) ─────────────────────── */
-  var savedAdmin = sessionStorage.getItem('qnaAdmin');
-  if (savedAdmin) { _isAdmin = true; _adminPw = savedAdmin; }
+  // 세션 상태는 패널을 열 때마다 qnaToggle()에서 확인하므로 초기 fetch 불필요
 
 }());
 </script>

@@ -1,7 +1,7 @@
 package com.jjp.jsu.devlog;
 
+import com.jjp.jsu.common.BadRequestException;
 import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -14,21 +14,8 @@ public class DevLogService {
 
     private final DevLogRepository repo;
 
-    @Value("${chat.admin-password}")
-    private String adminPassword;
-
     private static final DateTimeFormatter FMT =
             DateTimeFormatter.ofPattern("yyyy.MM.dd");
-
-    public boolean isAdmin(String password) {
-        return adminPassword.equals(password);
-    }
-
-    public void validateAdmin(String password) {
-        if (!isAdmin(password)) {
-            throw new DevLogAccessDeniedException("관리자 권한이 없습니다.");
-        }
-    }
 
     /* ── 목록 ──────────────────────────────────────────────────────── */
 
@@ -64,8 +51,7 @@ public class DevLogService {
     /* ── 등록 ──────────────────────────────────────────────────────── */
 
     @Transactional
-    public DevLogIdResponse create(String adminPassword, DevLogUpsertRequest request) {
-        validateAdmin(adminPassword);
+    public DevLogIdResponse create(DevLogUpsertRequest request) {
         validateRequest(request);
 
         DevLog log = repo.save(new DevLog(
@@ -80,8 +66,7 @@ public class DevLogService {
     /* ── 수정 ──────────────────────────────────────────────────────── */
 
     @Transactional
-    public DevLogStatusResponse update(Long id, String adminPassword, DevLogUpsertRequest request) {
-        validateAdmin(adminPassword);
+    public DevLogStatusResponse update(Long id, DevLogUpsertRequest request) {
         validateRequest(request);
 
         DevLog d = repo.findById(id)
@@ -95,9 +80,7 @@ public class DevLogService {
     /* ── 삭제 ──────────────────────────────────────────────────────── */
 
     @Transactional
-    public DevLogStatusResponse delete(Long id, String adminPassword) {
-        validateAdmin(adminPassword);
-
+    public DevLogStatusResponse delete(Long id) {
         if (!repo.existsById(id)) {
             throw new IllegalArgumentException("로그를 찾을 수 없습니다.");
         }
@@ -108,10 +91,10 @@ public class DevLogService {
 
     private void validateRequest(DevLogUpsertRequest request) {
         if (request.title() == null || request.title().isBlank()) {
-            throw new DevLogBadRequestException("제목을 입력하세요.");
+            throw new BadRequestException("제목을 입력하세요.");
         }
         if (request.content() == null || request.content().isBlank()) {
-            throw new DevLogBadRequestException("내용을 입력하세요.");
+            throw new BadRequestException("내용을 입력하세요.");
         }
     }
 

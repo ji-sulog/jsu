@@ -201,7 +201,7 @@
         const file = event.dataTransfer.files[0];
         if (!file) return;
         if (!file.name.toLowerCase().endsWith('.sql')) {
-            alert('.sql 파일만 업로드할 수 있습니다.');
+            showAlert('⚠️', '지원하지 않는 형식', '.sql 파일만 업로드할 수 있습니다.');
             return;
         }
         await uploadFile(file);
@@ -213,19 +213,19 @@
         try {
             const res = await fetch('/api/sql/upload', { method: 'POST', body: formData });
             const data = await res.json();
-            if (data.error) { alert(data.error); return; }
+            if (data.error) { showAlert('❌', '오류', data.error); return; }
             document.getElementById('sqlInput').value = data.text;
             document.getElementById('dropzoneName').innerHTML =
                 '<span class="file-name">📄 ' + data.filename + '</span>';
             updateLineCount();
         } catch (e) {
-            alert('파일 업로드 중 오류가 발생했습니다.');
+            showAlert('❌', '업로드 실패', '파일 업로드 중 오류가 발생했습니다.');
         }
     }
 
     async function runCheck() {
         const sql = document.getElementById('sqlInput').value.trim();
-        if (!sql) { alert('SQL을 입력하거나 파일을 업로드하세요.'); return; }
+        if (!sql) { showAlert('ℹ️', '입력 필요', 'SQL을 입력하거나 파일을 업로드하세요.'); return; }
 
         const btn = document.getElementById('checkBtn');
         btn.disabled = true;
@@ -243,7 +243,7 @@
             const data = await res.json();
             renderResult(data);
         } catch (e) {
-            alert('검사 중 오류가 발생했습니다.');
+            showAlert('❌', '검사 오류', '검사 중 오류가 발생했습니다.');
         } finally {
             btn.disabled = false;
             btn.innerHTML = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg> 검사 실행';
@@ -300,10 +300,6 @@
         if (!isOpen) item.classList.add('open');
     }
 
-    function escHtml(str) {
-        return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
-    }
-
     function openGuideModal() {
         document.getElementById('guideModal').style.display = 'flex';
     }
@@ -313,6 +309,7 @@
         if (e.target === this) this.style.display = 'none';
     });
 </script>
+<script src="/js/common.js"></script>
 
 </body>
 </html>

@@ -585,10 +585,6 @@
 
   function toggleCheck(btn) { btn.classList.toggle('active'); }
 
-  function escHtml(str) {
-    return (str||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
-  }
-
   /* ── Line Count ──────────────────────────── */
   function updateLineCount(textareaId, numId, badgeId) {
     const val = document.getElementById(textareaId).value;
@@ -601,5 +597,6 @@
   document.getElementById('oldText').addEventListener('input', () => updateLineCount('oldText', 'oldLineNum', 'oldLineCount'));
   document.getElementById('newText').addEventListener('input', () => updateLineCount('newText', 'newLineNum', 'newLineCount'));
 </script>
+<script src="/js/common.js"></script>
 </body>
 </html>

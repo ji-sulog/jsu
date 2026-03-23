@@ -60,6 +60,10 @@ public class Tool {
     @Column(name = "status_class")
     private String statusClass;
 
+    /** SVG 아이콘 식별자 — DB ID에 의존하지 않는 고정 키 (compare / scan / sql / naming / log-analyzer) */
+    @Column(name = "icon_type")
+    private String iconType;
+
     public boolean isActive() {
         return "ACTIVE".equals(status);
     }

@@ -1,8 +1,6 @@
 package com.jjp.jsu.compare;
 
-import com.jjp.jsu.compare.service.DiffService;
-import com.jjp.jsu.compare.service.FileExtractService;
-import com.jjp.jsu.compare.service.PriorityService;
+import com.jjp.jsu.common.FileExtractService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -20,14 +18,11 @@ import java.util.Map;
 public class CompareController {
 
     private final DiffService diffService;
-    private final PriorityService priorityService;
     private final FileExtractService fileExtractService;
 
     public CompareController(DiffService diffService,
-                             PriorityService priorityService,
                              FileExtractService fileExtractService) {
         this.diffService = diffService;
-        this.priorityService = priorityService;
         this.fileExtractService = fileExtractService;
     }
 
@@ -44,11 +39,7 @@ public class CompareController {
     @PostMapping("/api/compare")
     @ResponseBody
     public CompareResponse compare(@RequestBody CompareRequest request) {
-        List<ChangeItem> changes = diffService.diff(
-                request.oldText(),
-                request.newText(),
-                priorityService
-        );
+        List<ChangeItem> changes = diffService.diff(request.oldText(), request.newText());
 
         long high    = changes.stream().filter(c -> "HIGH".equals(c.priority())).count();
         long medium  = changes.stream().filter(c -> "MEDIUM".equals(c.priority())).count();
