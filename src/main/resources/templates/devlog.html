@@ -244,24 +244,30 @@
 
 <script>
 (function () {
-  var _adminPw    = null;
-  var _editingId  = null;   // 수정 중인 로그 ID
+  var _isAdmin   = false;
+  var _editingId = null;   // 수정 중인 로그 ID
 
-  /* ── 관리자 로그인 ───────────────────────────────────────── */
+  /* ── 관리자 로그인 (서버 세션 기반) ─────────────────────── */
   window.adminLogin = function () {
-    var pw = document.getElementById('adminPwInput').value.trim();
+    var pw  = document.getElementById('adminPwInput').value.trim();
     var err = document.getElementById('adminLoginErr');
     if (!pw) return;
     err.style.display = 'none';
-    verifyAdmin(pw).then(function(ok) {
-      if (!ok) {
+    fetch('/api/admin/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ password: pw })
+    }).then(function(r) {
+      if (!r.ok) {
         err.textContent = '비밀번호가 틀렸습니다.';
         err.style.display = 'block';
         return;
       }
-      _adminPw = pw;
-      sessionStorage.setItem('devlogAdmin', pw);
+      _isAdmin = true;
       setAdminUI(true);
+    }).catch(function() {
+      err.textContent = '오류가 발생했습니다.';
+      err.style.display = 'block';
     });
   };
 
@@ -281,9 +287,10 @@
   };
 
   window.adminLogout = function () {
-    _adminPw = null;
-    sessionStorage.removeItem('devlogAdmin');
-    setAdminUI(false);
+    fetch('/api/admin/logout', { method: 'POST' }).then(function() {
+      _isAdmin = false;
+      setAdminUI(false);
+    });
   };
 
   function setAdminUI(on) {
@@ -296,12 +303,6 @@
       document.getElementById('adminPwInput').value = '';
     }
     loadList();
-  }
-
-  function verifyAdmin(pw) {
-    return fetch('/api/devlog/admin-check', { headers: { 'X-Admin-Password': pw } })
-      .then(function(r) { return r.ok; })
-      .catch(function() { return false; });
   }
 
   /* ── 목록 로드 ───────────────────────────────────────────── */
@@ -348,7 +349,7 @@
       }).join('');
 
       var footer = document.getElementById('detailFooter');
-      if (_adminPw) {
+      if (_isAdmin) {
         footer.innerHTML =
           '<button class="btn-danger"    onclick="deleteLog(' + d.id + ')">삭제</button>' +
           '<button class="btn-secondary" onclick="openEditModal(' + d.id + ')">수정</button>' +
@@ -404,7 +405,7 @@
 
     fetch(url, {
       method: method,
-      headers: { 'Content-Type': 'application/json', 'X-Admin-Password': _adminPw },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ title: title, content: content, tags: tags })
     })
     .then(function(r) { return r.json(); })
@@ -419,8 +420,7 @@
   window.deleteLog = function (id) {
     if (!confirm('이 로그를 삭제하시겠습니까?')) return;
     fetch('/api/devlog/' + id, {
-      method: 'DELETE',
-      headers: { 'X-Admin-Password': _adminPw }
+      method: 'DELETE'
     })
     .then(function() {
       closeModal('detailModal');
@@ -444,21 +444,14 @@
     return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
   }
 
-  /* ── 세션 복원 ───────────────────────────────────────────── */
-  var saved = sessionStorage.getItem('devlogAdmin');
-  if (saved) {
-    verifyAdmin(saved).then(function(ok) {
-      if (ok) {
-        _adminPw = saved;
-        setAdminUI(true);
-        return;
-      }
-      sessionStorage.removeItem('devlogAdmin');
-      loadList();
-    });
-  } else {
-    loadList();
-  }
+  /* ── 페이지 로드 시 서버 세션 상태 확인 ─────────────────── */
+  fetch('/api/admin/status')
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+      _isAdmin = data.loggedIn;
+      setAdminUI(_isAdmin);
+    })
+    .catch(function() { loadList(); });
 
 }());
 </script>

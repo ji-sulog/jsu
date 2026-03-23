@@ -40,6 +40,24 @@ public class Notice {
     /** true 면 대시보드 상단 파란 배너로 표시 */
     private boolean pinned;
 
+    public Notice(String type, String title, String body, String displayDate, Integer sortOrder, boolean pinned) {
+        this.type = type;
+        this.title = title;
+        this.body = body;
+        this.displayDate = displayDate;
+        this.sortOrder = sortOrder;
+        this.pinned = pinned;
+    }
+
+    public void update(String type, String title, String body, String displayDate, Integer sortOrder, boolean pinned) {
+        this.type = type;
+        this.title = title;
+        this.body = body;
+        this.displayDate = displayDate;
+        this.sortOrder = sortOrder;
+        this.pinned = pinned;
+    }
+
     /** 타입에 따른 한글 레이블 */
     public String getTypeLabel() {
         return switch (type) {

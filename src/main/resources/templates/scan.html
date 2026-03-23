@@ -453,15 +453,6 @@ if (companyCode.equals(&quot;C001&quot;)) {
   </div>
 </div>
 
-<!-- File error modal -->
-<div id="fileModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:9999;display:none;align-items:center;justify-content:center;">
-  <div style="background:#fff;border-radius:14px;padding:28px 32px;max-width:400px;width:90%;box-shadow:0 20px 60px rgba(0,0,0,.25);">
-    <div style="font-size:1.8rem;text-align:center;margin-bottom:12px" id="fileModalIcon">⚠️</div>
-    <div style="font-weight:700;font-size:1rem;text-align:center;margin-bottom:8px" id="fileModalTitle"></div>
-    <div style="font-size:0.85rem;color:#64748b;text-align:center;line-height:1.6" id="fileModalMsg"></div>
-    <button onclick="closeModal()" style="width:100%;margin-top:20px;padding:10px;background:#0284c7;color:#fff;border:none;border-radius:8px;font-size:0.9rem;cursor:pointer;">확인</button>
-  </div>
-</div>
 
 <script>
   /* ── Line Count ────────────────────────────── */
@@ -803,10 +794,6 @@ if (companyCode.equals(&quot;C001&quot;)) {
     return result;
   }
 
-  function escHtml(s) {
-    if (!s) return '';
-    return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
-  }
 
   function catLabel(cat) {
     const map = { HARDCODING: '하드코딩', CUSTOMIZATION: '고객사 특화', REFACTORING: '설정화 후보' };
@@ -827,16 +814,10 @@ if (companyCode.equals(&quot;C001&quot;)) {
   }
   document.addEventListener('keydown', e => { if (e.key === 'Escape') closeGuide(); });
 
-  /* ── File Error Modal ───────────────────────── */
-  function showModal(icon, title, msg) {
-    document.getElementById('fileModalIcon').textContent = icon;
-    document.getElementById('fileModalTitle').textContent = title;
-    document.getElementById('fileModalMsg').innerHTML = msg;
-    document.getElementById('fileModal').style.display = 'flex';
-  }
-  function closeModal() {
-    document.getElementById('fileModal').style.display = 'none';
-  }
+  /* ── File Error Modal → common.js showAlert 위임 ── */
+  function showModal(icon, title, msg) { showAlert(icon, title, msg); }
+  function closeModal() { closeAlert(); }
 </script>
+<script src="/js/common.js"></script>
 </body>
 </html>

@@ -268,6 +268,119 @@
             color: #94a3b8;
         }
 
+        /* 관리자 공지 컨트롤 */
+        .notice-admin-bar {
+            display: none;
+            align-items: center;
+            gap: 8px;
+            margin-left: auto;
+        }
+        .notice-admin-bar.visible { display: flex; }
+        .notice-admin-login-btn {
+            background: none; border: 1px solid #e2e8f0;
+            border-radius: 7px; padding: 4px 10px;
+            font-size: 0.72rem; color: #94a3b8; cursor: pointer;
+        }
+        .notice-admin-login-btn:hover { color: #475569; border-color: #cbd5e1; }
+        .notice-admin-actions { display: none; align-items: center; gap: 8px; }
+        .notice-admin-actions.visible { display: flex; }
+        .btn-notice-add {
+            background: #1d4ed8; color: #fff; border: none;
+            border-radius: 7px; padding: 5px 12px;
+            font-size: 0.75rem; font-weight: 600; cursor: pointer;
+            display: flex; align-items: center; gap: 4px;
+        }
+        .btn-notice-add:hover { background: #1e40af; }
+        .btn-notice-admin-logout {
+            background: none; border: 1px solid #e2e8f0;
+            border-radius: 7px; padding: 4px 10px;
+            font-size: 0.72rem; color: #f59e0b; cursor: pointer;
+        }
+        .btn-notice-admin-logout:hover { color: #d97706; border-color: #fcd34d; }
+
+        /* 공지 인라인 관리 버튼 */
+        .notice-mgmt-btns {
+            display: none; gap: 6px; margin-left: 8px; flex-shrink: 0;
+        }
+        .notice-mgmt-btns button {
+            border: none; border-radius: 5px; padding: 3px 8px;
+            font-size: 0.68rem; font-weight: 600; cursor: pointer;
+        }
+        .btn-notice-edit   { background: #dbeafe; color: #1d4ed8; }
+        .btn-notice-delete { background: #fee2e2; color: #b91c1c; }
+
+        /* 모달 오버레이 */
+        .notice-modal-overlay {
+            display: none; position: fixed; inset: 0;
+            background: rgba(0,0,0,0.4); z-index: 1000;
+            align-items: center; justify-content: center;
+        }
+        .notice-modal-overlay.open { display: flex; }
+        .notice-modal {
+            background: #fff; border-radius: 14px;
+            width: 440px; max-width: 95vw;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.2);
+            display: flex; flex-direction: column; overflow: hidden;
+        }
+        .notice-modal-header {
+            display: flex; align-items: center;
+            padding: 16px 20px; border-bottom: 1px solid #f1f5f9;
+        }
+        .notice-modal-title {
+            flex: 1; font-size: 0.95rem; font-weight: 700; color: #1e293b;
+        }
+        .notice-modal-close {
+            background: none; border: none; cursor: pointer;
+            font-size: 1.3rem; color: #94a3b8; line-height: 1; padding: 0 4px;
+        }
+        .notice-modal-close:hover { color: #475569; }
+        .notice-modal-body {
+            padding: 20px; display: flex; flex-direction: column; gap: 14px;
+        }
+        .nm-label { font-size: 0.78rem; font-weight: 600; color: #475569; margin-bottom: 4px; }
+        .nm-input, .nm-select, .nm-textarea {
+            width: 100%; box-sizing: border-box;
+            border: 1px solid #e2e8f0; border-radius: 8px;
+            padding: 8px 10px; font-size: 0.84rem; color: #1e293b;
+            outline: none; transition: border-color .15s;
+        }
+        .nm-input:focus, .nm-select:focus, .nm-textarea:focus { border-color: #93c5fd; }
+        .nm-textarea { resize: vertical; min-height: 80px; }
+        .nm-row { display: flex; gap: 12px; }
+        .nm-row > div { flex: 1; }
+        .nm-toggle-row { display: flex; align-items: center; gap: 10px; }
+        .nm-toggle {
+            position: relative; width: 36px; height: 20px; flex-shrink: 0;
+        }
+        .nm-toggle input { opacity: 0; width: 0; height: 0; }
+        .nm-toggle-slider {
+            position: absolute; inset: 0; background: #e2e8f0;
+            border-radius: 20px; cursor: pointer; transition: background .2s;
+        }
+        .nm-toggle-slider:before {
+            content: ''; position: absolute;
+            width: 14px; height: 14px; left: 3px; top: 3px;
+            background: #fff; border-radius: 50%; transition: transform .2s;
+        }
+        .nm-toggle input:checked + .nm-toggle-slider { background: #1d4ed8; }
+        .nm-toggle input:checked + .nm-toggle-slider:before { transform: translateX(16px); }
+        .nm-err { font-size: 0.74rem; color: #ef4444; display: none; }
+        .notice-modal-footer {
+            display: flex; gap: 8px; padding: 16px 20px;
+            border-top: 1px solid #f1f5f9;
+        }
+        .nm-btn-primary {
+            flex: 1; background: #1d4ed8; color: #fff; border: none;
+            border-radius: 8px; padding: 9px; font-size: 0.84rem;
+            font-weight: 600; cursor: pointer;
+        }
+        .nm-btn-primary:hover { background: #1e40af; }
+        .nm-btn-cancel {
+            background: #f1f5f9; color: #64748b; border: none;
+            border-radius: 8px; padding: 9px 16px; font-size: 0.84rem; cursor: pointer;
+        }
+        .nm-btn-cancel:hover { background: #e2e8f0; }
+
         /* 공지 목록 */
         .notices-card {
             background: #fff;
@@ -440,19 +553,28 @@
                      th:attr="onclick='location.href=\'' + ${tool.href} + '\''">
                     <div class="tool-card-header">
                         <div class="tool-card-icon blue">
-                            <!-- id=1: 요구사항 비교 아이콘 -->
-                            <svg th:if="${tool.id == 1}" width="22" height="22" viewBox="0 0 24 24"
+                            <svg th:if="${tool.iconType == 'compare'}" width="22" height="22" viewBox="0 0 24 24"
                                  fill="none" stroke="#3b82f6" stroke-width="2">
                                 <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
                                 <polyline points="14 2 14 8 20 8"/>
                                 <line x1="16" y1="13" x2="8" y2="13"/>
                                 <line x1="16" y1="17" x2="8" y2="17"/>
                             </svg>
-                            <!-- id=2: 하드코딩 탐지 아이콘 -->
-                            <svg th:if="${tool.id == 2}" width="22" height="22" viewBox="0 0 24 24"
+                            <svg th:if="${tool.iconType == 'scan'}" width="22" height="22" viewBox="0 0 24 24"
                                  fill="none" stroke="#3b82f6" stroke-width="2">
                                 <circle cx="11" cy="11" r="8"/>
                                 <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+                            </svg>
+                            <svg th:if="${tool.iconType == 'sql'}" width="22" height="22" viewBox="0 0 24 24"
+                                 fill="none" stroke="#3b82f6" stroke-width="2">
+                                <ellipse cx="12" cy="5" rx="9" ry="3"/>
+                                <path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/>
+                                <path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/>
+                            </svg>
+                            <svg th:if="${tool.iconType == 'naming'}" width="22" height="22" viewBox="0 0 24 24"
+                                 fill="none" stroke="#3b82f6" stroke-width="2">
+                                <path d="M12 20h9"/>
+                                <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/>
                             </svg>
                         </div>
                         <div class="tool-card-meta">
@@ -487,33 +609,11 @@
                      class="tool-card coming">
                     <div class="tool-card-header">
                         <div class="tool-card-icon slate">
-                            <!-- id=3: SQL 아이콘 -->
-                            <svg th:if="${tool.id == 3}" width="22" height="22" viewBox="0 0 24 24"
-                                 fill="none" stroke="#94a3b8" stroke-width="2">
-                                <ellipse cx="12" cy="5" rx="9" ry="3"/>
-                                <path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/>
-                                <path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/>
-                            </svg>
-                            <!-- id=4: 네이밍 아이콘 -->
-                            <svg th:if="${tool.id == 4}" width="22" height="22" viewBox="0 0 24 24"
-                                 fill="none" stroke="#94a3b8" stroke-width="2">
-                                <polyline points="4 7 4 4 20 4 20 7"/>
-                                <line x1="9" y1="20" x2="15" y2="20"/>
-                                <line x1="12" y1="4" x2="12" y2="20"/>
-                            </svg>
-                            <!-- id=5: 서버 로그 아이콘 -->
-                            <svg th:if="${tool.id == 5}" width="22" height="22" viewBox="0 0 24 24"
+                            <svg th:if="${tool.iconType == 'log-analyzer'}" width="22" height="22" viewBox="0 0 24 24"
                                  fill="none" stroke="#94a3b8" stroke-width="2">
                                 <rect x="2" y="3" width="20" height="14" rx="2"/>
                                 <path d="M8 21h8M12 17v4"/>
                                 <path d="M7 8h.01M11 8h6M7 12h.01M11 12h6"/>
-                            </svg>
-                            <!-- id=6: API 스펙 아이콘 -->
-                            <svg th:if="${tool.id == 6}" width="22" height="22" viewBox="0 0 24 24"
-                                 fill="none" stroke="#94a3b8" stroke-width="2">
-                                <path d="M8 6h10"/><path d="M8 12h8"/><path d="M8 18h6"/>
-                                <rect x="3" y="4" width="18" height="16" rx="2"/>
-                                <path d="M6 8h.01M6 12h.01M6 16h.01"/>
                             </svg>
                         </div>
                         <div class="tool-card-meta">
@@ -553,19 +653,37 @@
                 <line x1="14" y1="1" x2="14" y2="4"/>
             </svg>
             <h2>공지 및 업데이트</h2>
+            <!-- 관리자 컨트롤 -->
+            <div class="notice-admin-bar" id="noticeAdminBar">
+                <button class="notice-admin-login-btn" id="noticeAdminLoginBtn" onclick="openAdminLoginModal()">🔑 관리자</button>
+                <div class="notice-admin-actions" id="noticeAdminActions">
+                    <button class="btn-notice-add" onclick="openNoticeModal(null)">
+                        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
+                            <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+                        </svg>
+                        공지 추가
+                    </button>
+                    <button class="btn-notice-admin-logout" onclick="noticeAdminLogout()">↩ 로그아웃</button>
+                </div>
+            </div>
         </div>
 
         <div class="notices-card">
             <div th:each="notice : ${notices}"
                  class="notice-item"
                  th:classappend="${notice.body == null or notice.body.isBlank()} ? ' no-body'"
-                 th:attr="data-has-body=${notice.body != null and !notice.body.isBlank()}">
+                 th:attr="data-notice-id=${notice.id}, data-has-body=${notice.body != null and !notice.body.isBlank()}, data-notice-type=${notice.type}, data-notice-title=${notice.title}, data-notice-body=${notice.body}, data-notice-date=${notice.displayDate}, data-notice-sort=${notice.sortOrder}, data-notice-pinned=${notice.pinned}">
                 <div class="notice-header" onclick="toggleNotice(this)">
                     <span class="notice-type"
                           th:classappend="${notice.typeClass}"
                           th:text="${notice.typeLabel}">타입</span>
                     <span class="notice-title" th:text="${notice.title}">제목</span>
                     <span class="notice-date" th:text="${notice.displayDate}">날짜</span>
+                    <!-- 관리자 수정/삭제 버튼 -->
+                    <div class="notice-mgmt-btns" onclick="event.stopPropagation()">
+                        <button class="btn-notice-edit" onclick="openNoticeEditFromItem(this)">수정</button>
+                        <button class="btn-notice-delete" onclick="deleteNoticeFromItem(this)">삭제</button>
+                    </div>
                     <!-- body 있는 항목에만 화살표 표시 -->
                     <svg th:if="${notice.body != null and !notice.body.isBlank()}"
                          class="notice-chevron"
@@ -583,15 +701,198 @@
     </main>
 </div>
 
+<!-- ── 공지 등록/수정 모달 ── -->
+<div class="notice-modal-overlay" id="noticeModalOverlay" onclick="if(event.target===this) closeNoticeModal()">
+    <div class="notice-modal">
+        <div class="notice-modal-header">
+            <span class="notice-modal-title" id="noticeModalTitle">공지 등록</span>
+            <button class="notice-modal-close" onclick="closeNoticeModal()">×</button>
+        </div>
+        <div class="notice-modal-body">
+            <div>
+                <div class="nm-label">타입</div>
+                <select class="nm-select" id="nmType">
+                    <option value="UPDATE">업데이트</option>
+                    <option value="GUIDE">가이드</option>
+                    <option value="PLAN">예정</option>
+                </select>
+            </div>
+            <div>
+                <div class="nm-label">제목 *</div>
+                <input class="nm-input" id="nmTitle" type="text" placeholder="공지 제목" maxlength="200"/>
+            </div>
+            <div>
+                <div class="nm-label">본문 (선택 — 아코디언 펼침 내용)</div>
+                <textarea class="nm-textarea" id="nmBody" placeholder="상세 내용 (비워두면 펼침 없음)"></textarea>
+            </div>
+            <div class="nm-row">
+                <div>
+                    <div class="nm-label">표시 날짜</div>
+                    <input class="nm-input" id="nmDate" type="text" placeholder="예: 2026.03"/>
+                </div>
+                <div>
+                    <div class="nm-label">정렬 순서 (비우면 자동)</div>
+                    <input class="nm-input" id="nmSort" type="number" placeholder="숫자"/>
+                </div>
+            </div>
+            <div class="nm-toggle-row">
+                <label class="nm-toggle">
+                    <input type="checkbox" id="nmPinned"/>
+                    <span class="nm-toggle-slider"></span>
+                </label>
+                <span style="font-size:0.8rem;color:#475569;">상단 배너로 표시 (pinned)</span>
+            </div>
+            <span class="nm-err" id="nmErr"></span>
+        </div>
+        <div class="notice-modal-footer">
+            <button class="nm-btn-cancel" onclick="closeNoticeModal()">취소</button>
+            <button class="nm-btn-primary" id="nmSubmitBtn" onclick="submitNotice()">등록</button>
+        </div>
+    </div>
+</div>
+
 <script>
     // 공지 아코디언 토글
     function toggleNotice(header) {
         const item = header.closest('.notice-item');
         if (item.classList.contains('no-body')) return;
         const isOpen = item.classList.contains('open');
-        // 다른 항목 닫기
         document.querySelectorAll('.notice-item.open').forEach(el => el.classList.remove('open'));
         if (!isOpen) item.classList.add('open');
+    }
+
+    /* ── 관리자 세션 상태 ─────────────────────────────────── */
+    var _noticeIsAdmin = false;
+    var _editingNoticeId = null;
+
+    function setNoticeAdminUI(isAdmin) {
+        _noticeIsAdmin = isAdmin;
+        document.getElementById('noticeAdminBar').classList.add('visible');
+        document.getElementById('noticeAdminLoginBtn').style.display = isAdmin ? 'none' : 'inline-block';
+        var actions = document.getElementById('noticeAdminActions');
+        actions.classList.toggle('visible', isAdmin);
+        // 인라인 수정/삭제 버튼 표시
+        document.querySelectorAll('.notice-mgmt-btns').forEach(function(el) {
+            el.style.display = isAdmin ? 'flex' : 'none';
+        });
+    }
+
+    // 페이지 로드 시 세션 확인
+    fetch('/api/admin/status', { credentials: 'same-origin' })
+        .then(function(r) { return r.json(); })
+        .then(function(data) { setNoticeAdminUI(data.loggedIn); });
+
+    /* ── 관리자 로그인 (인라인 prompt) ─────────────────────── */
+    function openAdminLoginModal() {
+        var pw = prompt('관리자 비밀번호를 입력하세요.');
+        if (!pw) return;
+        fetch('/api/admin/login', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'same-origin',
+            body: JSON.stringify({ password: pw })
+        }).then(function(r) {
+            if (!r.ok) { alert('비밀번호가 틀렸습니다.'); return; }
+            setNoticeAdminUI(true);
+        });
+    }
+
+    function noticeAdminLogout() {
+        fetch('/api/admin/logout', { method: 'POST', credentials: 'same-origin' })
+            .then(function() { setNoticeAdminUI(false); });
+    }
+
+    /* ── 공지 모달 ──────────────────────────────────────── */
+    function openNoticeModal(noticeId, data) {
+        _editingNoticeId = noticeId || null;
+        document.getElementById('noticeModalTitle').textContent = noticeId ? '공지 수정' : '공지 등록';
+        document.getElementById('nmSubmitBtn').textContent = noticeId ? '수정' : '등록';
+        document.getElementById('nmErr').style.display = 'none';
+
+        if (data) {
+            document.getElementById('nmType').value    = data.type || 'UPDATE';
+            document.getElementById('nmTitle').value   = data.title || '';
+            document.getElementById('nmBody').value    = data.body || '';
+            document.getElementById('nmDate').value    = data.displayDate || '';
+            document.getElementById('nmSort').value    = data.sortOrder != null ? data.sortOrder : '';
+            document.getElementById('nmPinned').checked = data.pinned === true || data.pinned === 'true';
+        } else {
+            document.getElementById('nmType').value    = 'UPDATE';
+            document.getElementById('nmTitle').value   = '';
+            document.getElementById('nmBody').value    = '';
+            document.getElementById('nmDate').value    = '';
+            document.getElementById('nmSort').value    = '';
+            document.getElementById('nmPinned').checked = false;
+        }
+        document.getElementById('noticeModalOverlay').classList.add('open');
+    }
+
+    function openNoticeEditFromItem(btn) {
+        var item = btn.closest('.notice-item');
+        var id   = item.dataset.noticeId;
+        openNoticeModal(id, {
+            type:        item.dataset.noticeType,
+            title:       item.dataset.noticeTitle,
+            body:        item.dataset.noticeBody,
+            displayDate: item.dataset.noticeDate,
+            sortOrder:   item.dataset.noticeSort,
+            pinned:      item.dataset.noticePinned
+        });
+    }
+
+    function closeNoticeModal() {
+        document.getElementById('noticeModalOverlay').classList.remove('open');
+        _editingNoticeId = null;
+    }
+
+    function submitNotice() {
+        var type   = document.getElementById('nmType').value;
+        var title  = document.getElementById('nmTitle').value.trim();
+        var body   = document.getElementById('nmBody').value.trim();
+        var date   = document.getElementById('nmDate').value.trim();
+        var sort   = document.getElementById('nmSort').value.trim();
+        var pinned = document.getElementById('nmPinned').checked;
+        var err    = document.getElementById('nmErr');
+
+        if (!title) { err.textContent = '제목을 입력하세요.'; err.style.display = 'block'; return; }
+        err.style.display = 'none';
+
+        var payload = {
+            type:        type,
+            title:       title,
+            body:        body || null,
+            displayDate: date || null,
+            sortOrder:   sort ? parseInt(sort, 10) : null,
+            pinned:      pinned
+        };
+
+        var url    = _editingNoticeId ? '/api/notice/' + _editingNoticeId : '/api/notice';
+        var method = _editingNoticeId ? 'PUT' : 'POST';
+
+        fetch(url, {
+            method: method,
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'same-origin',
+            body: JSON.stringify(payload)
+        }).then(function(r) {
+            if (!r.ok) { err.textContent = '저장 실패. 로그인 상태를 확인하세요.'; err.style.display = 'block'; return; }
+            location.reload();
+        });
+    }
+
+    function deleteNoticeFromItem(btn) {
+        var item = btn.closest('.notice-item');
+        var id   = item.dataset.noticeId;
+        var title = item.dataset.noticeTitle;
+        if (!confirm('공지 "' + title + '"을 삭제하시겠습니까?')) return;
+
+        fetch('/api/notice/' + id, {
+            method: 'DELETE',
+            credentials: 'same-origin'
+        }).then(function(r) {
+            if (!r.ok) { alert('삭제 실패. 로그인 상태를 확인하세요.'); return; }
+            location.reload();
+        });
     }
 </script>
 
